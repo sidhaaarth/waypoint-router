@@ -1,0 +1,3 @@
+product-support
+
+Why this name: it describes first-line support for your software product (how-to questions, login and SSO trouble, billing, bugs) without naming a tier or a model. Clear in code: model="product-support". If you also run internal IT helpdesk tickets, give those a separate connection like "it-helpdesk", since the requests and the right answers differ a lot.

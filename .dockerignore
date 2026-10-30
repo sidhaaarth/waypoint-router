@@ -1,0 +1,10 @@
+# The Dockerfile copies only what it needs; this keeps the build context small and secrets out.
+*
+!app/
+!static/
+!requirements.txt
+!Dockerfile
+!docker-compose.yml
+!.dockerignore
+!SELF_HOST.md
+**/__pycache__

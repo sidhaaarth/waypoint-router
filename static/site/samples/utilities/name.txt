@@ -1,0 +1,3 @@
+energy-support
+
+Why this name: it covers billing, meter readings, payments, moving home and outage questions for an energy and water supplier without implying it handles emergencies (those always go to the emergency line). In code: model="energy-support". If you run water and energy as separate brands, give each its own connection so their answers stay specific.

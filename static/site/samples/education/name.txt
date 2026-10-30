@@ -1,0 +1,3 @@
+student-help
+
+Why this name: it covers the questions students and applicants ask the student services office (admissions, enrolment, fees, timetables, the learning platform, exams and support services) without implying it grades work or makes academic decisions. In code: model="student-help". If you add a tutoring assistant for course content, give it its own connection; it needs different reference conversations and a different system prompt.

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Log In</title>
+<meta name="description" content="Open your Waypoint dashboard with your router key.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-md px-4 py-10 md:py-20">
+  <div class="flex items-center gap-3 md:gap-4"><span class="shrink-0 text-4xl leading-none md:text-5xl" aria-hidden="true">🔑</span><div class="min-w-0"><h1 class="text-2xl font-semibold tracking-tight">Log in</h1></div></div>
+  <p class="mt-2 text-sm muted">Use the router key you got when you signed up.</p>
+  <form id="f" class="card mt-6 space-y-4 p-5 md:p-6" novalidate>
+    <p id="expired" class="hidden rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">That router key was rejected. Log in again.</p>
+    <div><label class="label" for="rk">Router key</label><input id="rk" class="input font-mono" type="password" required autocomplete="current-password" placeholder="rk-..."></div>
+    <p id="err" class="hidden text-sm text-red-600 dark:text-red-400" role="alert"></p>
+    <button id="go" class="btn btn-primary w-full" type="submit">Open dashboard</button>
+    <p class="text-center text-xs muted">No key yet? <a class="underline" href="/signup">Sign up</a></p>
+  </form>
+</main>
+<script>
+if (new URLSearchParams(location.search).get('expired')) $('#expired').classList.remove('hidden');
+const showErr = m => { $('#err').textContent = m; $('#err').classList.toggle('hidden', !m); };
+$('#f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const rk = $('#rk').value.trim();
+  if (!/^rk-/.test(rk)) return showErr('Router keys start with "rk-".');
+  const go = $('#go'); go.disabled = true; showErr('');
+  try {
+    const r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + rk } });
+    if (r.status === 401) throw new Error('That router key is not valid.');
+    if (!r.ok) throw new Error('Login failed (HTTP ' + r.status + ').');
+    const s = await fetch('/api/session', { method: 'POST', headers: { Authorization: 'Bearer ' + rk } });
+    if (!s.ok) throw new Error('Login failed (HTTP ' + s.status + ').');
+    store.set('rk', rk);  // copy for code snippets and live chat; the cookie is the session
+    const routes = await fetch('/api/routes', { headers: { Authorization: 'Bearer ' + rk } }).then(x => x.ok ? x.json() : null).catch(() => null);
+    location.href = Array.isArray(routes) && !routes.length ? '/onboarding' : '/dashboard';  // first login: set up a connection
+  } catch (err) { showErr(err.message === 'Failed to fetch' ? 'Network error: is the router running?' : err.message); go.disabled = false; }
+});
+</script>
+</body>
+</html>

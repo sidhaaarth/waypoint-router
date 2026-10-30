@@ -1,0 +1,3 @@
+customer-support
+
+Why this name: when your business doesn't fit a standard category, a plain, descriptive name is best. It tells anyone reading your code what the connection does, and it doesn't depend on which model answers. In code: model="customer-support". This sample uses a home-services business (cleaning, handyman and pest control bookings) as an example. Rename it to match your own business (e.g. "booking-help", "member-support") and keep one connection per distinct job.

@@ -1,0 +1,3 @@
+banking-help
+
+Why this name: it covers everyday banking support (cards, transfers, app access, fees) without implying the assistant gives financial advice or makes account decisions. It is short and readable in code: model="banking-help". Keep anything that needs a decision on money (disputes, lending) on separate connections or with human agents, so this one can be calibrated on routine questions where a small model does well.

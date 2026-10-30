@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Sign Up</title>
+<meta name="description" content="Create a Waypoint project and get your router key.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-xl px-4 py-10 md:py-16">
+  <div id="formBox">
+    <div class="flex items-center gap-3 md:gap-4"><span class="shrink-0 text-4xl leading-none md:text-5xl" aria-hidden="true">🚀</span><div class="min-w-0"><div class="text-xs font-semibold uppercase tracking-wide text-accent-dim dark:text-accent">Step 1</div><h1 class="mt-1 text-2xl font-semibold tracking-tight">Create your router</h1></div></div>
+    <p class="mt-2 text-sm muted">You'll get a router key for your app. Your Token Factory key stays encrypted on our side and you keep paying Nebius directly.</p>
+    <form id="f" class="card mt-6 space-y-4 p-5 md:p-6" novalidate>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div><label class="label" for="first_name">First name</label><input id="first_name" class="input" required maxlength="100" autocomplete="given-name"></div>
+        <div><label class="label" for="last_name">Last name</label><input id="last_name" class="input" required maxlength="100" autocomplete="family-name"></div>
+      </div>
+      <div><label class="label" for="username">Username</label><input id="username" class="input" required pattern="[A-Za-z0-9_.\-]{3,32}" maxlength="32" autocomplete="username" placeholder="3–32 letters, numbers, . _ -"></div>
+      <div><label class="label" for="email">Work email</label><input id="email" class="input" type="email" required maxlength="200" autocomplete="email"></div>
+      <div><label class="label" for="company">Store or company name</label><input id="company" class="input" required maxlength="100" autocomplete="organization"></div>
+      <div><label class="label" for="use_case">Use case</label>
+        <select id="use_case" class="input" required>
+          <option value="email">Email support</option><option value="chat">Chat support</option><option value="both">Both</option>
+        </select></div>
+      <div><label class="label" for="business_type">Business type / market</label>
+        <select id="business_type" class="input" required>
+          <option value="">Choose one…</option>
+          <option>E-commerce &amp; retail</option><option>Banking &amp; fintech</option><option>Insurance</option>
+          <option>Telecom &amp; internet</option><option>SaaS / IT support</option><option>Travel &amp; airlines</option>
+          <option>Utilities</option><option>Education</option><option>Healthcare clinic (admin only, no medical advice)</option>
+          <option value="other">Other</option>
+        </select>
+        <input id="business_other" class="input mt-2 hidden" maxlength="100" placeholder="Describe your business" aria-label="Other business type"></div>
+      <div><label class="label" for="tf_key">Nebius Token Factory API key</label>
+        <input id="tf_key" class="input font-mono" type="password" required autocomplete="new-password" placeholder="v1.CmQK...">
+        <p class="mt-1.5 text-xs muted">Create one at <a class="text-accent-dim underline underline-offset-2 dark:text-accent" href="https://tokenfactory.nebius.com/project/api-keys" target="_blank" rel="noopener">tokenfactory.nebius.com/project/api-keys</a>. We check it works, then store it encrypted. It is never shown again.</p></div>
+      <p id="err" class="hidden rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300" role="alert"></p>
+      <button id="go" class="btn btn-primary w-full" type="submit">Create router key</button>
+      <p class="text-center text-xs muted">Already have a router key? <a class="underline" href="/login">Log in</a></p>
+    </form>
+  </div>
+
+  <div id="done" class="hidden">
+    <div class="mb-6 flex items-center gap-3">
+      <span class="grid h-9 w-9 place-items-center rounded-full bg-accent/15 text-accent"><svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5 9-10"/></svg></span>
+      <div><h1 class="text-xl font-semibold">Your router is ready</h1><p class="text-sm muted">This key is your login and your app's API key.</p></div>
+    </div>
+    <div class="card p-5">
+      <div class="label">Your router key</div>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <code id="rk" class="code min-w-0 flex-1 break-all"></code>
+        <button id="copy" class="btn btn-sm" type="button">Copy key</button>
+      </div>
+      <div class="mt-3 flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" role="alert">
+        <svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span><b>Save it now.</b> This is the only time we show it. We keep only a fingerprint of it, so we can't recover it for you.</span>
+      </div>
+    </div>
+    <div class="card mt-6 p-5">
+      <div class="text-xs font-semibold uppercase tracking-wide text-accent-dim dark:text-accent">Step 2 · optional</div>
+      <h2 class="mt-1 text-base font-semibold">Teach your router</h2>
+      <p class="mt-1 text-sm muted">Upload your policy, FAQ, past conversations and the topics that must go to a person. You can also do this later from the dashboard (Settings).</p>
+      <div class="mt-4 flex flex-wrap gap-2"><a href="/teach" class="btn btn-primary">Teach your router</a><a href="/login" class="btn">Skip, go to login</a></div>
+    </div>
+  </div>
+</main>
+<script>
+const F = ['first_name', 'last_name', 'username', 'email', 'company', 'use_case', 'business_type', 'tf_key'];
+$('#business_type').addEventListener('change', e => $('#business_other').classList.toggle('hidden', e.target.value !== 'other'));
+const showErr = m => { $('#err').textContent = m; $('#err').classList.toggle('hidden', !m); };
+$('#f').addEventListener('submit', async e => {
+  e.preventDefault();
+  showErr('');
+  const bad = F.map(id => $('#' + id)).find(el => !el.value.trim() || !el.checkValidity());
+  if (bad) { showErr(`Please check "${$(`label[for=${bad.id}]`).textContent}".`); bad.focus(); return; }
+  const body = Object.fromEntries(F.map(id => [id, $('#' + id).value.trim()]));
+  if (body.business_type === 'other') {
+    body.business_type = $('#business_other').value.trim();
+    if (!body.business_type) { showErr('Please describe your business type.'); $('#business_other').focus(); return; }
+  }
+  body.name = body.company;
+  const go = $('#go'); go.disabled = true; go.textContent = 'Checking your Token Factory key…';
+  try {
+    const r = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === 'string' ? d.detail : 'Sign up failed (HTTP ' + r.status + ')');
+    $('#tf_key').value = '';
+    $('#rk').textContent = d.router_key;
+    try { sessionStorage.setItem('rk_new', d.router_key); } catch (e) {}  // /teach uploads with the key just issued
+    $('#formBox').classList.add('hidden'); $('#done').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  } catch (err) { showErr(err.message === 'Failed to fetch' ? 'Network error: is the router running?' : err.message); }
+  finally { go.disabled = false; go.textContent = 'Create router key'; }
+});
+$('#copy').addEventListener('click', async () => {
+  const b = $('#copy');
+  try { await navigator.clipboard.writeText($('#rk').textContent); b.textContent = 'Copied'; }
+  catch (e) { getSelection().selectAllChildren($('#rk')); b.textContent = 'Press Ctrl+C'; }
+  setTimeout(() => { b.textContent = 'Copy key'; }, 1600);
+});
+</script>
+</body>
+</html>

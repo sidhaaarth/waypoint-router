@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Teach Your Router</title>
+<meta name="description" content="Upload your policy, FAQ, past conversations and safety topics so the router learns your store.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+<style>.drop.over { outline: 2px dashed #76b900; outline-offset: 2px; }</style>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-3xl px-4 py-10 md:py-14">
+  <div class="flex items-center gap-3 md:gap-4"><span class="shrink-0 text-4xl leading-none md:text-5xl" aria-hidden="true">🎓</span><div class="min-w-0"><div class="text-xs font-semibold uppercase tracking-wide text-accent-dim dark:text-accent">Step 2 · optional</div>
+  <h1 class="mt-1 text-2xl font-semibold tracking-tight">Teach your router</h1></div></div>
+  <p class="mt-2 text-sm muted">Everything here is optional, and you can come back any time from the dashboard (Settings). Each box checks your file and shows a preview before anything is uploaded.</p>
+
+  <div id="keyBox" class="card mt-6 hidden p-5">
+    <label class="label" for="rkIn">Router key</label>
+    <div class="flex gap-2"><input id="rkIn" class="input font-mono" type="password" placeholder="rk-..."><button id="rkGo" class="btn btn-primary" type="button">Use key</button></div>
+    <p class="mt-1.5 text-xs muted">Uploads go to the project this key belongs to.</p>
+  </div>
+
+  <details class="card mt-6 p-5" open>
+    <summary class="cursor-pointer text-sm font-semibold">What helps the model most</summary>
+    <ul class="mt-3 list-disc space-y-1.5 pl-5 text-sm">
+      <li><b>Real past conversations with the correct outcome.</b> The best single input: they become examples the model copies.</li>
+      <li><b>A few bad examples, with what went wrong.</b> These become tests the router must pass, never examples to copy.</li>
+      <li><b>Your policy as concrete rules with numbers</b> (return windows, limits, who is eligible), not marketing prose. Rules need numbers to be checked.</li>
+      <li><b>FAQ with exact answers.</b> The router can quote them word for word instead of guessing.</li>
+      <li><b>A list of things that must go to a person.</b> These always win, whatever the model thinks.</li>
+      <li><b>Trusted sites only.</b> The router looks things up only where you allow it.</li>
+      <li><b>Remove personal data from samples</b> (names, emails, card and order numbers). The model only needs the shape of the case.</li>
+      <li><b>Aim for 20–50 good conversations per request type.</b> Fewer works; more beyond that adds little.</li>
+      <li><b>Keep formats consistent.</b> Same column names in every file, one conversation per line.</li>
+    </ul>
+    <h3 class="mt-5 text-sm font-semibold">What we do with each file</h3>
+    <div class="mt-2 overflow-x-auto"><table class="tbl text-sm"><tbody>
+      <tr><td class="td font-medium">Policy</td><td class="td">Drafted into rules that <b>you review</b> before they go live</td></tr>
+      <tr><td class="td font-medium">Good conversations</td><td class="td">Memory of past cases</td></tr>
+      <tr><td class="td font-medium">Bad conversations</td><td class="td">Test suite</td></tr>
+      <tr><td class="td font-medium">FAQ</td><td class="td">Stored answers</td></tr>
+      <tr><td class="td font-medium">Website URLs</td><td class="td">Trusted lookup sites</td></tr>
+      <tr><td class="td font-medium">Must-go-to-a-person</td><td class="td">Safety override</td></tr>
+      <tr><td class="td font-medium">What we help with</td><td class="td">Scope gate (anything else is handed off)</td></tr>
+    </tbody></table></div>
+    <p class="mt-4 rounded-lg border border-zinc-300 bg-zinc-100 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-800/60"><b>Privacy:</b> stored in your project only. Not used to train any model. Delete any item any time (list at the bottom).</p>
+  </details>
+
+  <section class="card mt-6 p-5">
+    <h2 class="text-base font-semibold">Starter pack from public help centres</h2>
+    <p class="mt-1 text-sm muted">No data yet? We read a few public help-centre pages for your business type and propose request types, example customer messages, topics for a person and a "what we help with" paragraph. <b>Shapes how requests are understood; never used as your answers or rules.</b></p>
+    <p class="mt-2 text-xs muted">Public pages only, used internally as routing hints, not republished. No other company's prices, policies or answers are kept. You review it before anything is saved.</p>
+    <div class="mt-3 flex flex-wrap items-center gap-3"><button id="spGo" class="btn" type="button">Build a starter pack from public help centres</button><span id="spMsg" class="text-sm muted"></span></div>
+    <div id="spReview" class="mt-4 hidden"></div>
+  </section>
+
+  <div id="boxes" class="mt-6 space-y-6"></div>
+
+  <section class="card mt-6">
+    <div class="card-h"><span class="card-t">Your uploads</span><a href="/dashboard" class="btn btn-sm">Go to dashboard</a></div>
+    <div id="list" class="p-4 text-sm muted">Nothing uploaded yet.</div>
+  </section>
+</main>
+<script>
+const CONV = 'message, request_type, reply';
+const BOXES = [
+  { kind: 'policy', title: 'Policy / rules guide', accept: '.txt,.md,.html,.htm',
+    help: 'Your returns, refunds, shipping and account rules. Plain text, Markdown or a saved web page. PDFs: copy the text in.',
+    ph: 'Returns: unworn items within 30 days of delivery get a full refund.\nCard disputes: allowed within 120 days; freeze the card first if fraud is suspected.\nBroadband outages over 24 hours: one day\'s credit per day without service.\nAppointments cancelled with under 24 hours\' notice: $40 fee, waived once a year.',
+    file: 'policy.txt' },
+  { kind: 'faq', title: 'FAQ', accept: '.txt,.md,.csv',
+    help: 'Q: / A: lines, or a CSV with columns question,answer.',
+    ph: 'Q: How long does a bank transfer take?\nA: Usually within 2 hours to other UK banks; 1–3 working days abroad.\n\nQ: How much baggage can I bring?\nA: One cabin bag up to 10 kg. Checked bags can be added in Manage booking.',
+    file: 'faq.txt' },
+  { kind: 'good', title: 'Conversations handled WELL', accept: '.jsonl,.csv,.txt',
+    help: `JSONL (one per line) or CSV with columns ${CONV}. message can be a list of customer messages.`,
+    ph: '{"message": "There\'s a payment on my card I don\'t recognise.", "request_type": "card_dispute", "reply": "Thanks for flagging it. I\'ve frozen your card and opened a dispute..."}\n{"message": "My internet has been down since this morning.", "request_type": "outage", "reply": "Sorry for the trouble. There\'s a known outage in your area..."}',
+    file: 'good.jsonl' },
+  { kind: 'bad', title: 'Conversations handled POORLY', accept: '.jsonl,.csv,.txt',
+    help: `Same format plus what_went_wrong. These become tests, not examples.`,
+    ph: '{"message": "My flight was cancelled, what are my options?", "request_type": "cancelled_flight", "reply": "You can book a new flight on our website.", "what_went_wrong": "Did not offer the free rebooking or refund"}',
+    file: 'bad.jsonl' },
+  { kind: 'urls', title: 'Help-centre / trusted website URLs', accept: '.txt,.csv',
+    help: 'One web address per line. Only sites you trust for answers.',
+    ph: 'https://yourbank.example/help/card-disputes\nhttps://support.yourtelco.example/outages\nhttps://yourclinic.example/appointments', file: 'urls.txt' },
+  { kind: 'triggers', title: 'Must go to a person', accept: '.txt,.csv',
+    help: 'One topic or phrase per line: safety, legal threats, self-harm, fraud, press, anything a human must handle.',
+    ph: 'legal action\nfraud on my account\nchest pain\ngas leak\nbereavement', file: 'triggers.txt' },
+  { kind: 'scope', title: 'What we help with', accept: '.txt,.md',
+    help: 'One paragraph. Requests outside this are handed to a person instead of guessed at. The examples file has one per business type: keep only the one closest to yours.',
+    ph: 'We help bank customers with cards, payments, transfers, statements and app log-in problems. We do not give investment or tax advice.',
+    file: 'scope.txt' },
+];
+const UNIT = { policy: 'lines', faq: 'Q&A pairs', good: 'conversations', bad: 'conversations', urls: 'URLs', triggers: 'topics', scope: 'paragraph' };
+const NAME = { ...Object.fromEntries(BOXES.map(b => [b.kind, b.title])), rules_draft: 'Drafted rules (to review)',
+               starter_pack: 'Starter pack (to review)', request_types: 'Request types (from starter pack)' };
+
+let rk = null;
+try { rk = sessionStorage.getItem('rk_new'); } catch (e) {}
+rk = rk || store.get('rk');
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + rk } });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) { $('#keyBox').classList.remove('hidden'); throw new Error('Router key not accepted. Enter it above.'); }
+  if (!r.ok) { const e = new Error(typeof d.detail === 'string' ? d.detail : (d.detail && d.detail.errors ? 'Fix the errors above' : 'HTTP ' + r.status)); e.detail = d.detail; throw e; }
+  return d;
+}
+const send = (path, body) => api(path, { method: 'POST', body: JSON.stringify(body || {}) });
+async function poll(id) {
+  for (;;) {
+    const j = await api('/api/jobs/' + id);
+    if (j.status !== 'running') return j;
+    await new Promise(r => setTimeout(r, 2000));
+  }
+}
+const short = v => esc(typeof v === 'string' ? v : JSON.stringify(v)).slice(0, 300);
+
+// ---------- upload boxes
+$('#boxes').innerHTML = BOXES.map(b => `
+<section class="card p-5" data-kind="${b.kind}">
+  <h2 class="text-base font-semibold">${esc(b.title)}</h2>
+  <p class="mt-1 text-sm muted">${esc(b.help)}</p>
+  <div class="drop mt-3 rounded-lg">
+    <textarea class="input min-h-[110px] font-mono text-xs" placeholder="${esc(b.ph)}" aria-label="${esc(b.title)}"></textarea>
+    <div class="mt-2 flex flex-wrap items-center gap-2 text-xs muted">
+      <label class="btn btn-sm cursor-pointer">Choose file<input type="file" class="hidden" accept="${b.accept}"></label>
+      <span class="fname">or drag a file here, or paste</span>
+      <a class="btn btn-sm ml-auto" href="/site/samples/teach/${b.file}" download="example-${b.file}">Download examples</a>
+    </div>
+  </div>
+  <div class="check mt-3 text-sm"></div>
+  <div class="mt-3 flex flex-wrap items-center gap-3">
+    <button class="up btn btn-primary" type="button" disabled>Upload</button>
+    ${b.kind === 'policy' ? '<label class="flex items-center gap-2 text-sm"><input type="checkbox" class="draft" checked> Draft rules from this with Nemotron Super (you review them)</label>' : ''}
+    <span class="msg text-sm muted"></span>
+  </div>
+</section>`).join('');
+
+document.querySelectorAll('[data-kind]').forEach(box => {
+  const kind = box.dataset.kind, ta = $('textarea', box), drop = $('.drop', box), up = $('.up', box), msg = $('.msg', box);
+  let fname = '', timer = null, seq = 0;
+  async function check() {
+    const n = ++seq, out = $('.check', box);
+    up.disabled = true;
+    if (!ta.value.trim()) { out.innerHTML = ''; return; }
+    try {
+      const d = await send('/api/knowledge?dry_run=1', { kind, filename: fname, content: ta.value });
+      if (n !== seq) return;
+      const ok = !d.error_count && d.items;
+      out.innerHTML = `<div class="${ok ? 'text-accent-dim dark:text-accent' : 'text-red-600 dark:text-red-400'} font-medium">${d.items} ${UNIT[kind]} found${d.error_count ? ` · ${d.error_count} problem${d.error_count > 1 ? 's' : ''}` : ''}</div>`
+        + (d.errors.length ? `<ul class="mt-1 list-disc pl-5 text-xs text-red-600 dark:text-red-400">${d.errors.map(e => `<li>${esc(e)}</li>`).join('')}</ul>` : '')
+        + (d.preview.length ? `<div class="mt-2 text-xs muted">Preview</div><ul class="mt-1 space-y-1">${d.preview.map(p => `<li class="code !p-2 text-xs">${short(p)}</li>`).join('')}</ul>` : '')
+        + `<div class="mt-2 text-xs muted">Used for: ${esc(d.used_for)}</div>`;
+      up.disabled = !ok;
+    } catch (e) { if (n === seq) out.innerHTML = `<span class="text-red-600 dark:text-red-400">${esc(e.message)}</span>`; }
+  }
+  const later = () => { clearTimeout(timer); timer = setTimeout(check, 400); };
+  async function load(file) {
+    if (!file) return;
+    if (/\.pdf$/i.test(file.name)) { $('.fname', box).textContent = 'PDFs are not read yet: open it and paste the text in.'; return; }
+    if (file.size > 2e6) { $('.fname', box).textContent = 'Over 2 MB: split it into smaller files.'; return; }
+    fname = file.name; $('.fname', box).textContent = file.name;
+    ta.value = await file.text(); check();
+  }
+  ta.addEventListener('input', () => { fname = fname && ta.value ? fname : ''; later(); });
+  $('input[type=file]', box).addEventListener('change', e => load(e.target.files[0]));
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); load(e.dataTransfer.files[0]); });
+  up.addEventListener('click', async () => {
+    up.disabled = true; msg.textContent = 'Uploading…';
+    const draft = kind === 'policy' && $('.draft', box).checked;
+    try {
+      const d = await send('/api/knowledge' + (draft ? '?draft_rules=1' : ''), { kind, filename: fname, content: ta.value });
+      msg.textContent = `Saved ${d.items} ${UNIT[kind]}. ${d.note}`;
+      ta.value = ''; fname = ''; $('.check', box).innerHTML = ''; $('.fname', box).textContent = 'or drag a file here, or paste';
+      refresh();
+      if (d.job_id) {
+        msg.textContent += ' Drafting rules…';
+        const j = await poll(d.job_id);
+        msg.textContent = j.status === 'done' ? `Rules drafted for ${j.result.subflows} request types. Review them before they go live (listed below).`
+                                              : 'Rule drafting failed: ' + ((j.result || {}).error || 'unknown error');
+        refresh();
+      }
+    } catch (e) { msg.textContent = e.message; up.disabled = false; }
+  });
+});
+
+// ---------- starter pack
+async function showPack(id) {
+  const row = await api('/api/knowledge/' + id), p = JSON.parse(row.content);
+  const el = $('#spReview');
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <div class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">Review before accepting. ${esc(p.note)}</div>
+    <h3 class="mt-4 text-sm font-semibold">${p.request_types.length} request types</h3>
+    <div class="mt-2 space-y-2">${p.request_types.map(t => `
+      <details class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"><summary class="cursor-pointer text-sm"><b>${esc(t.name)}</b> <span class="muted">${esc(t.description)}</span></summary>
+      <ul class="mt-2 list-disc pl-5 text-xs muted">${t.examples.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>`).join('')}</div>
+    <h3 class="mt-4 text-sm font-semibold">Suggested: must go to a person</h3>
+    <p class="mt-1 text-sm">${p.human_topics.map(esc).join(' · ') || '—'}</p>
+    <h3 class="mt-4 text-sm font-semibold">Suggested: what we help with</h3>
+    <p class="mt-1 text-sm">${esc(p.scope)}</p>
+    <h3 class="mt-4 text-sm font-semibold">Sources (public pages)</h3>
+    <ul class="mt-1 list-disc pl-5 text-xs">${p.sources.map(s => `<li><a class="underline break-all" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a></li>`).join('') || '<li>none</li>'}</ul>
+    <div class="mt-4 flex gap-2"><button id="spAccept" class="btn btn-primary" type="button">Accept</button><button id="spDiscard" class="btn" type="button">Discard</button></div>`;
+  $('#spAccept').onclick = async () => { await send(`/api/knowledge/${id}/accept`); el.innerHTML = '<p class="text-sm">Accepted: request types, topics for a person and scope are saved below.</p>'; refresh(); };
+  $('#spDiscard').onclick = async () => { await api('/api/knowledge/' + id, { method: 'DELETE' }); el.classList.add('hidden'); refresh(); };
+}
+$('#spGo').addEventListener('click', async () => {
+  const b = $('#spGo'), m = $('#spMsg');
+  b.disabled = true; m.textContent = 'Reading public help centres… (about a minute)';
+  try {
+    const d = await send('/api/knowledge/starter_pack');
+    m.textContent = `Building a starter pack for ${d.business_type}…`;
+    const j = await poll(d.job_id);
+    if (j.status !== 'done') throw new Error('Starter pack failed: ' + ((j.result || {}).error || 'unknown error'));
+    m.textContent = '';
+    await showPack(j.result.knowledge_id); refresh();
+  } catch (e) { m.textContent = e.message; }
+  b.disabled = false;
+});
+
+// ---------- list
+async function refresh() {
+  if (!rk) return;
+  try {
+    const rows = await api('/api/knowledge');
+    $('#list').innerHTML = rows.length ? `<table class="tbl w-full"><tbody>${rows.map(r => `<tr>
+      <td class="td"><div class="font-medium">${esc(NAME[r.kind] || r.kind)}</div><div class="text-xs muted">${esc(r.filename || 'pasted')} · ${r.items} item${r.items === 1 ? '' : 's'} · ${new Date(r.created_at * 1000).toLocaleString()}</div></td>
+      <td class="td text-right whitespace-nowrap">${r.kind === 'starter_pack' ? `<button class="btn btn-sm" data-review="${r.id}">Review</button> ` : ''}<button class="btn btn-sm" data-del="${r.id}">Delete</button></td></tr>`).join('')}</tbody></table>` : 'Nothing uploaded yet.';
+  } catch (e) { $('#list').textContent = e.message; }
+}
+$('#list').addEventListener('click', async e => {
+  const del = e.target.dataset.del, rev = e.target.dataset.review;
+  if (rev) return showPack(rev);
+  if (del && confirm('Delete this item? This cannot be undone.')) { await api('/api/knowledge/' + del, { method: 'DELETE' }); refresh(); }
+});
+$('#rkGo').addEventListener('click', () => { rk = $('#rkIn').value.trim(); if (rk) { $('#keyBox').classList.add('hidden'); refresh(); } });
+if (!rk) $('#keyBox').classList.remove('hidden'); else refresh();
+</script>
+</body>
+</html>

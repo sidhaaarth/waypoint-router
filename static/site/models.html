@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Models and Platforms</title>
+<meta name="description" content="The Nemotron models the router uses on Nebius Token Factory, their prices, and the tools it connects to.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-6xl px-4">
+  <section class="py-12 md:py-16">
+    <div class="flex items-center gap-3 md:gap-4"><span class="shrink-0 text-4xl leading-none md:text-5xl" aria-hidden="true">🧩</span><div class="min-w-0"><h1 class="text-3xl font-semibold tracking-tight md:text-4xl">Models &amp; platforms</h1></div></div>
+    <p class="mt-3 max-w-3xl text-base muted">Every model call runs on <b>Nebius Token Factory</b>, with your own API key, so you pay Nebius directly. The router only decides which model does each step.</p>
+  </section>
+
+  <section aria-labelledby="models">
+    <h2 id="models" class="h2">NVIDIA Nemotron models</h2>
+    <div class="mt-6 card overflow-x-auto">
+      <table class="tbl">
+        <thead><tr><th class="th">Model</th><th class="th">Role in the router</th><th class="th text-right">Input / 1M</th><th class="th text-right">Cached input / 1M</th><th class="th text-right">Output / 1M</th></tr></thead>
+        <tbody>
+          <tr><td class="td"><span class="badge tier-nano">Nano</span><div class="mt-1 font-mono text-[11px] muted">nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B</div></td><td class="td min-w-[16rem]">The workhorse: reads every message, picks the request type, pulls out details, writes most replies. Thinking off, so its certainty can be measured.</td><td class="td text-right tabular-nums">$0.06</td><td class="td text-right tabular-nums muted">—</td><td class="td text-right tabular-nums">$0.24</td></tr>
+          <tr><td class="td"><span class="badge tier-super">Super</span><div class="mt-1 font-mono text-[11px] muted">nvidia/nemotron-3-super-120b-a12b</div></td><td class="td min-w-[16rem]">The backup: decides when Nano isn't sure, and the first step up in the cascade.</td><td class="td text-right tabular-nums">$0.30</td><td class="td text-right tabular-nums">$0.06</td><td class="td text-right tabular-nums">$0.90</td></tr>
+          <tr><td class="td"><span class="badge tier-ultra">Ultra</span><div class="mt-1 font-mono text-[11px] muted">nvidia/Nemotron-3-Ultra-550b-a55b</div></td><td class="td min-w-[16rem]">The senior: writes escalations, denials and high-value replies; re-reads details Nano wasn't sure of. Used for a small share of calls.</td><td class="td text-right tabular-nums">$1.00</td><td class="td text-right tabular-nums">$0.12</td><td class="td text-right tabular-nums">$3.00</td></tr>
+          <tr><td class="td"><span class="badge b-gray">Super-VL</span><div class="mt-1 font-mono text-[11px] muted">nvidia/Nemotron-3.5-Super-VL</div></td><td class="td min-w-[16rem]">Vision: names the problem in a customer's photo and checks the photo matches their story (about $0.0002 a photo). Also Super's fallback.</td><td class="td text-right tabular-nums">$0.30</td><td class="td text-right tabular-nums">$0.06</td><td class="td text-right tabular-nums">$0.90</td></tr>
+          <tr><td class="td"><span class="badge b-gray">Lightning</span><div class="mt-1 font-mono text-[11px] muted">nvidia/Nemotron-3_5-Lightning</div></td><td class="td min-w-[16rem]">Nano's fallback when Nano is busy or rate-limited.</td><td class="td text-right tabular-nums">$0.06</td><td class="td text-right tabular-nums muted">—</td><td class="td text-right tabular-nums">$0.24</td></tr>
+          <tr><td class="td"><span class="badge b-gray">Qwen3-Embedding</span><div class="mt-1 font-mono text-[11px] muted">Qwen/Qwen3-Embedding-8B</div></td><td class="td min-w-[16rem]">Embeddings (4,096 dimensions). Used in our tests to compare answers; not in the live reply path.</td><td class="td text-right muted" colspan="3">see Token Factory catalog</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="src">Prices from the Token Factory model catalog on 2026-10-27 (the router's defaults in <code class="font-mono">app/costs.py</code>); a running router refreshes them from the live catalog. "—" means no cached-input discount.</p>
+  </section>
+
+  <section class="mt-16" aria-labelledby="int">
+    <h2 id="int" class="h2">Works with</h2>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="card p-5"><div class="text-sm font-semibold">OpenAI-compatible API</div><p class="mt-2 text-sm muted">Same <code class="font-mono text-xs">/v1/chat/completions</code> shape, streaming included. Works with any OpenAI SDK, LangChain, LlamaIndex or plain curl: change <code class="font-mono text-xs">base_url</code> and the key.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Email or chat</div><p class="mt-2 text-sm muted">The same route handles a one-off email or a back-and-forth chat. Chats get turn handling: answer the new question, then follow up on the open task.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Store connector</div><p class="mt-2 text-sm muted">Shopify-shaped orders, customers and actions. The demo uses "Trailhead Outfitters", a fake store, with a live feed of every action the AI takes.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Tavily</div><p class="mt-2 text-sm muted">Web search for product questions your store can't answer, limited to the brand's own site. One basic search per question.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">LangSmith</div><p class="mt-2 text-sm muted">Traces of every model call, grouped per request. Message text is sent only with your opt-in.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Docker / Nebius Serverless</div><p class="mt-2 text-sm muted">One container image. Run it locally, in Docker Compose, or on Nebius Serverless with the database on a mounted volume. <a class="underline" href="/docs#selfhost">Download it</a>.</p></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

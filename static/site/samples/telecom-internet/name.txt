@@ -1,0 +1,3 @@
+connect-support
+
+Why this name: it covers the everyday help a broadband and mobile provider gives (outages, slow internet, bills, plans, devices) and doesn't tie itself to one product line, so mobile and home internet questions can share one calibrated connection. In code: model="connect-support". If you add a separate high-stakes job (e.g. retention offers or porting disputes), keep it on its own connection.

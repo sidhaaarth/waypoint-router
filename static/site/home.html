@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Waypoint</title>
+<meta name="description" content="Nemotron-first routing for customer support: Nano answers most, bigger models only when needed.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-6xl px-4">
+
+  <section class="grid items-center gap-10 py-12 md:grid-cols-[1.1fr_1fr] md:py-20">
+    <div class="min-w-0">
+      <span class="badge b-gray mb-4">NVIDIA Nemotron 3 · Nebius Token Factory</span>
+      <h1 class="text-3xl font-semibold leading-tight tracking-tight md:text-5xl">Nemotron-first routing for customer support.</h1>
+      <p class="mt-4 text-lg muted">Nano answers most messages. Bigger models step in only when needed.</p>
+      <p class="mt-4 text-base muted">Point your support app's <code class="rounded bg-zinc-200 px-1 font-mono text-[0.9em] dark:bg-zinc-800">base_url</code> at the router. Every email and chat runs through checks, rules and store look-ups first, then the cheapest Nemotron model that can do the job writes the reply. You see what each answer cost, and why.</p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <a href="/signup" class="btn btn-primary px-5 py-2.5">Get a router key</a>
+        <a href="/how" class="btn px-5 py-2.5">How it works</a>
+        <a href="/results" class="btn px-5 py-2.5">See results</a>
+      </div>
+    </div>
+    <div class="min-w-0" aria-labelledby="nums">
+      <h2 id="nums" class="sr-only">Headline numbers</h2>
+      <div id="kpis" class="grid grid-cols-2 gap-3">
+        <div class="card h-32 animate-pulse"></div><div class="card h-32 animate-pulse"></div><div class="card h-32 animate-pulse"></div><div class="card h-32 animate-pulse"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card min-w-0 overflow-hidden" aria-label="Live conversations">
+    <div class="card-h"><span class="card-t">Watch it handle real customer chats</span></div>
+    <iframe src="/embed/demo?kiosk=1" title="Customer conversations, replayed with the router's decisions" loading="lazy" class="block h-[720px] w-full border-0 lg:h-[600px]"></iframe>
+  </section>
+
+  <section class="py-14" aria-labelledby="what">
+    <h2 id="what" class="h2">What the router does</h2>
+    <div class="mt-6 grid gap-4 md:grid-cols-3">
+      <div class="card p-5"><div class="text-sm font-semibold">Small model first</div><p class="mt-2 text-sm muted">Nemotron Nano reads the message and does most of the work. If it isn't sure, the question goes up to Super, and to Ultra only when really needed. Its own word-by-word certainty decides, not a guess made in advance.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Checks before words</div><p class="mt-2 text-sm muted">Plain code copies order numbers and emails exactly. Your store's records decide who the customer is. Your written rules decide what's allowed. The model only writes the reply once the facts are settled.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Every decision on record</div><p class="mt-2 text-sm muted">Each reply keeps a record: which model did which step, how sure it was, what the store said, what it cost. Customer details stay out of it unless you opt in.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="teams">
+    <h2 id="teams" class="h2">What teams get</h2>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="card p-5"><div class="text-lg font-semibold text-accent-dim dark:text-accent">Cut model spend ~60% vs Super alone</div><p class="mt-1 text-sm muted">Nano answers most messages; Super steps in only when needed.</p></div>
+      <div class="card p-5"><div class="text-lg font-semibold text-accent-dim dark:text-accent">Near-Super answers, under half the price</div><p class="mt-1 text-sm muted">Within a few points of Super alone, and about 90% cheaper than Ultra.</p></div>
+      <div class="card p-5"><div class="text-lg font-semibold text-accent-dim dark:text-accent">Exact order numbers, every time</div><p class="mt-1 text-sm muted">IDs, emails and phones never pass through a model.</p></div>
+      <div class="card p-5"><div class="text-lg font-semibold text-accent-dim dark:text-accent">Pushes back on mismatched photos</div><p class="mt-1 text-sm muted">Wrong photo? It asks for the right one before any refund.</p></div>
+      <div class="card p-5"><div class="text-lg font-semibold text-accent-dim dark:text-accent">Verifies before it shares</div><p class="mt-1 text-sm muted">Account details come from your records, masked, never from a claim.</p></div>
+      <div class="card p-5"><div class="text-lg font-semibold text-accent-dim dark:text-accent">Your rules decide actions</div><p class="mt-1 text-sm muted">Refunds, credits and resets run only through your policy, in code.</p></div>
+    </div>
+  </section>
+</main>
+
+<script>
+bench().then(d => {
+  const r = (d.classification || {}).router, ph = ((d.photos || {}).modes || {}).image_text || {};
+  if (!r) { $('#kpis').innerHTML = '<div class="card col-span-full p-5 text-sm muted">See <a class="underline" href="/results">Results</a> for the numbers.</div>'; return; }
+  const tile = (v, l, s) => `<div class="card min-w-0 p-4 md:p-5"><div class="text-3xl font-semibold tabular-nums text-accent-dim dark:text-accent md:text-4xl">${v}</div><div class="mt-1 text-sm font-medium">${l}</div><div class="mt-1 text-xs muted">${s}</div></div>`;
+  $('#kpis').innerHTML =
+    tile(pctF(1 - r.cost_per_1k / r.super_only.cost_per_1k), 'less than Super alone', 'model spend per message') +
+    tile(pctF(1 - r.cost_per_1k / r.ultra_only.cost_per_1k), 'less than Ultra alone', 'model spend per message') +
+    tile(pctF(r.on_nano), 'handled by Nano', 'the smallest, cheapest model') +
+    tile(pctF(ph.accuracy), 'photo issues identified', 'from the photo and message');
+});
+</script>
+</body>
+</html>

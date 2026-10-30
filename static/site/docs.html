@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Waypoint Docs</title>
+<meta name="description" content="Set up Waypoint, create connections, call it from your app, and understand what it does with each message.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+<style>
+  .doc h2 { scroll-margin-top: 5rem; }
+  .doc h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; margin-top: 3rem; }
+  .doc h3 { font-size: 1rem; font-weight: 600; margin-top: 1.75rem; }
+  .doc p, .doc li { font-size: .9rem; line-height: 1.65; }
+  .doc p { margin-top: .75rem; }
+  .doc ul, .doc ol { margin-top: .75rem; padding-left: 1.25rem; }
+  .doc ul { list-style: disc; } .doc ol { list-style: decimal; }
+  .doc li + li { margin-top: .35rem; }
+  .doc code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .8em; }
+  .doc pre { margin-top: .75rem; }
+  .doc table { margin-top: .75rem; }
+  .toc a { display: block; padding: .3rem .6rem; border-radius: .5rem; font-size: .85rem; }
+</style>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-6xl px-4">
+  <section class="py-10 md:py-14">
+    <div class="flex items-center gap-3 md:gap-4"><span class="shrink-0 text-4xl leading-none md:text-5xl" aria-hidden="true">📖</span><div class="min-w-0"><h1 class="text-3xl font-semibold tracking-tight md:text-4xl">Docs</h1></div></div>
+    <p class="mt-3 max-w-3xl text-base muted">Everything you need to set up Waypoint, connect your support app, and understand what happens to each customer message.</p>
+    <div data-hosted class="card mt-6 flex max-w-3xl flex-wrap items-center justify-between gap-3 p-4">
+      <div class="min-w-0"><div class="text-sm font-semibold">Run it in your own network</div><p class="text-sm muted">Download Waypoint and run it on your own machines with Docker.</p></div>
+      <div class="flex gap-2"><a href="#selfhost" class="btn btn-sm">See the steps</a><a href="/download/waypoint.zip" class="btn btn-primary btn-sm" download>Download (.zip)</a></div>
+    </div>
+  </section>
+
+  <div class="grid gap-8 md:grid-cols-[200px_minmax(0,1fr)]">
+    <nav class="toc md:sticky md:top-20 md:self-start" aria-label="On this page">
+      <div class="card p-2 text-zinc-700 dark:text-zinc-300">
+        <a href="#start" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">1. Getting started</a>
+        <a href="#selfhost" data-hosted class="hover:bg-zinc-100 dark:hover:bg-zinc-800">2. Run it in your network</a>
+        <a href="#teach" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">3. Teach your router</a>
+        <a href="#connections" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">4. Connections</a>
+        <a href="#api" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">5. Call it from your app</a>
+        <a href="#behind" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">6. What happens to a message</a>
+        <a href="#dashboard" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">7. The dashboard</a>
+        <a href="#privacy" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">8. Privacy and security</a>
+        <a href="#faq" class="hover:bg-zinc-100 dark:hover:bg-zinc-800">9. FAQ</a>
+      </div>
+    </nav>
+
+    <article class="doc min-w-0 max-w-3xl pb-8">
+      <h2 id="start" style="margin-top:0">1. Getting started</h2>
+      <p>Waypoint sits between your support app and NVIDIA Nemotron models on Nebius Token Factory. Your app talks to it exactly like it talks to OpenAI, so there's nothing new to learn.</p>
+      <ol>
+        <li><b>Sign up.</b> Tell us your name, company, use case (email, chat or both) and business type, and paste your Nebius Token Factory API key. Model usage is billed to your own Token Factory account.</li>
+        <li><b>Save your router key.</b> You get a key starting with <code>rk-</code>. It's shown <b>once</b>, so keep it somewhere safe. Your app uses it in place of an OpenAI key, and you use it to log in.</li>
+        <li><b>Teach your router</b> (optional, recommended). Upload your policies, FAQ and past conversations. See <a class="underline" href="#teach">section 3</a>.</li>
+        <li><b>Create your first connection.</b> After your first login you're taken straight to setup. See <a class="underline" href="#connections">section 4</a>.</li>
+        <li><b>Point your app at Waypoint.</b> Change the base URL and key. See <a class="underline" href="#api">section 5</a>.</li>
+      </ol>
+      <h3>Logging in and out</h3>
+      <p>Log in with your router key. You stay signed in on that browser until you press <b>Log out</b>; until then, opening the site takes you straight to your dashboard.</p>
+
+      <section data-hosted>
+      <h2 id="selfhost">2. Run it in your own network</h2>
+      <p>Prefer to keep Waypoint and your data on your own machines? Download it and run it with Docker. The download is the plain app: sign-up, login, onboarding, dashboard, live chat, these docs and the router API. It has no demo data; you bring your own rules and conversations.</p>
+      <p><a href="/download/waypoint.zip" class="btn btn-primary" download>Download Waypoint (.zip)</a></p>
+      <ol>
+        <li>Install Docker Desktop (or Docker with Compose on a server).</li>
+        <li>Unzip the download and open a terminal in the <code>waypoint</code> folder.</li>
+        <li>Run <code>docker compose up --build -d</code>.</li>
+        <li>Open <code>http://localhost:8888/signup</code>, enter your details and your Nebius Token Factory key, and save the router key you get back.</li>
+        <li>Log in with that key and set up your first connection.</li>
+      </ol>
+      <p>Your projects, keys, history, uploads and memory stay in a Docker volume on your machine and survive restarts. Model calls still go to Nebius Token Factory over HTTPS, because that's where NVIDIA Nemotron runs. The included <code>README.md</code> covers backups, ports and optional settings.</p>
+      </section>
+
+      <h2 id="teach">3. Teach your router</h2>
+      <p>The more Waypoint knows about how <i>you</i> handle support, the more messages the small, cheap model can answer correctly. Each kind of upload has one job:</p>
+      <div class="card overflow-x-auto"><table class="tbl">
+        <thead><tr><th class="th">You upload</th><th class="th">It becomes</th><th class="th">Format</th></tr></thead>
+        <tbody>
+          <tr><td class="td">Policy / rules guide</td><td class="td">Rules that <b>you review</b> before they go live</td><td class="td">Text, Markdown or a saved web page</td></tr>
+          <tr><td class="td">Conversations handled well</td><td class="td">Memory of past cases</td><td class="td">JSONL or CSV: <code>message, request_type, reply</code></td></tr>
+          <tr><td class="td">Conversations handled poorly</td><td class="td">Tests, never examples</td><td class="td">Same, plus <code>what_went_wrong</code></td></tr>
+          <tr><td class="td">FAQ</td><td class="td">Stored answers</td><td class="td"><code>Q:</code> / <code>A:</code> lines, or CSV <code>question,answer</code></td></tr>
+          <tr><td class="td">Help-centre / website URLs</td><td class="td">The only sites it may look things up on</td><td class="td">One URL per line</td></tr>
+          <tr><td class="td">Must go to a person</td><td class="td">Safety hand-off topics</td><td class="td">One topic per line</td></tr>
+          <tr><td class="td">What we help with</td><td class="td">Scope: anything else is handed off</td><td class="td">A short paragraph</td></tr>
+        </tbody></table></div>
+      <h3>No data yet? Use a starter pack</h3>
+      <p>Waypoint can read a few public help-centre pages for your business type and propose request types, example customer messages, hand-off topics and a scope paragraph. Nothing is saved until you review and accept it.</p>
+
+      <h2 id="connections">4. Connections</h2>
+      <p>A <b>connection</b> is one job your assistant does, for example "reply to support emails". Each has its own name, instructions and model settings. Your app picks one with <code>model="connection-name"</code>.</p>
+      <h3>Creating a connection</h3>
+      <ul>
+        <li><b>Business type</b> unlocks sample files for every field, so you can see the expected format.</li>
+        <li><b>Connection name</b>: letters, digits and <code>- _ .</code> only, such as <code>support-email</code>.</li>
+        <li><b>Task description</b>: who writes in, through which channel, the tone you want, and what must go to a person.</li>
+        <li><b>System prompt</b> (optional): leave it blank and Nemotron Super drafts one for you; you can edit it later.</li>
+        <li><b>Reference conversations</b>: 20–50 real customer messages with the reply you'd want, covering your most common requests. One JSON object per line:</li>
+      </ul>
+      <pre class="code">{"input": "Where is my order #1234?", "expected": "Thanks for reaching out! Your order shipped yesterday..."}</pre>
+      <h3>Tuning (calibration)</h3>
+      <p>When you save a connection, Waypoint runs your reference conversations through Nemotron Nano, Super and Ultra and grades each answer against yours. It then picks the <b>cheapest setup that matches the best model's quality</b> on your own examples: Nano with a bigger model as backup, or a bigger model directly if Nano isn't good enough for this job. The Routes page shows what it chose and the accuracy of each model.</p>
+      <p>You can add more connections any time with <b>New connection</b> on the Routes page.</p>
+
+      <h2 id="api">5. Call it from your app</h2>
+      <p>Use any OpenAI SDK. Change two things: the base URL and the key.</p>
+      <pre class="code">from openai import OpenAI
+
+client = OpenAI(base_url="https://YOUR-WAYPOINT-HOST/v1", api_key="rk-...")
+reply = client.chat.completions.create(
+    model="support-email",      # your connection name
+    user="customer-42",         # optional: tracks cost per customer
+    messages=[{"role": "user", "content": "My boots arrived torn, order 4223520702"}],
+)
+print(reply.choices[0].message.content)</pre>
+      <pre class="code">curl https://YOUR-WAYPOINT-HOST/v1/chat/completions \
+  -H "Authorization: Bearer rk-..." -H "Content-Type: application/json" \
+  -d '{"model": "support-email", "messages": [{"role": "user", "content": "Where is my order?"}]}'</pre>
+      <h3>Useful options</h3>
+      <ul>
+        <li><b>Photos</b>: send images the standard OpenAI way (an <code>image_url</code> content part, including <code>data:</code> URLs). Waypoint checks the photo matches what the customer says.</li>
+        <li><b>Conversations</b>: send the whole chat history in <code>messages</code>, and the header <code>x-conversation-id</code> to group turns on your dashboard.</li>
+        <li><b>Channel</b>: header <code>x-router-channel: email</code> or <code>chat</code> adjusts the reply style.</li>
+        <li><b>Priority</b>: header <code>x-router-priority: background</code> lets live customer traffic go first when you're near your rate limit.</li>
+        <li><b>Streaming</b>: <code>stream: true</code> works as usual.</li>
+        <li><b>Plain model calls</b>: pass a Token Factory model ID as <code>model</code> to skip routing but keep pacing, logging and cost tracking.</li>
+      </ul>
+      <h3>What comes back</h3>
+      <p>A standard chat completion. Response headers tell you how it was handled:</p>
+      <div class="card overflow-x-auto"><table class="tbl">
+        <tbody>
+          <tr><td class="td"><code>x-router-tier</code>, <code>x-router-model</code></td><td class="td">Which model answered</td></tr>
+          <tr><td class="td"><code>x-router-escalated</code></td><td class="td">Whether a bigger model took over</td></tr>
+          <tr><td class="td"><code>x-router-cost-usd</code></td><td class="td">What this request cost</td></tr>
+          <tr><td class="td"><code>x-router-fallback</code></td><td class="td">Whether a busy model was swapped for a similar one</td></tr>
+        </tbody></table></div>
+
+      <h2 id="behind">6. What happens to a message</h2>
+      <p>Think of a good support desk: a junior agent reads every message, checks the order and the rulebook, and only calls a senior colleague when something is unclear or risky. Waypoint works the same way.</p>
+      <ol>
+        <li><b>Understand.</b> Nemotron Nano works out what the customer wants, helped by similar past cases from your own data. If it isn't sure, a bigger model double-checks.</li>
+        <li><b>Check the facts.</b> Order numbers, emails and account details are looked up in your store. Membership level, address and order status always come from your records, never from what the customer claims.</li>
+        <li><b>Apply your rules.</b> Your policies run as plain, predictable rules, so refunds and exceptions follow your rulebook every time.</li>
+        <li><b>Take actions.</b> Only the actions your rules allow, such as starting a return. The reply never promises something that didn't happen.</li>
+        <li><b>Write the reply.</b> The smallest model that writes well enough for this kind of message. Sensitive cases get a stronger model.</li>
+        <li><b>Safety check.</b> Topics you marked "must go to a person", and anything outside your scope, are handed off instead of answered.</li>
+      </ol>
+      <p>Every reply gets a <b>decision record</b> you can open on the dashboard: what was understood, what was checked, which rule applied and which model wrote it.</p>
+      <h3>Around every request</h3>
+      <ul>
+        <li><b>Cost control:</b> the cheapest Nemotron model that can do the job answers, and bigger models step in only when needed.</li>
+        <li><b>Rate limits:</b> requests are paced to your Token Factory limits, so you aren't hit with errors at busy times.</li>
+        <li><b>Fallback:</b> if a model is busy, the request moves to a similar one instead of failing.</li>
+        <li><b>Learning:</b> if you opt in, good conversations are added to your memory of past cases each night.</li>
+      </ul>
+
+      <h2 id="dashboard">7. The dashboard</h2>
+      <ul>
+        <li><b>Overview</b>: traffic, cost, how much stayed on Nano, and what the pipeline decided.</li>
+        <li><b>Routes</b>: your connections, their tuning results and settings (for example photo checks).</li>
+        <li><b>Customers</b>: spend per customer (the <code>user</code> field). Set a budget; near it, that customer's answers stay on Nano.</li>
+        <li><b>Requests</b>: the latest requests, which model answered, and each decision record.</li>
+        <li><b>Rate limits</b>: how close you are to your Token Factory limits.</li>
+        <li><b>Settings</b>: your project details, and whether good conversations may be used to grow your memory.</li>
+        <li><b>Live chat</b> (the chat button): try your connections as a customer would and watch each decision step.</li>
+      </ul>
+
+      <h2 id="privacy">8. Privacy and security</h2>
+      <ul>
+        <li>Your router key is stored only as a fingerprint (hash), so we can check it but can't read it back.</li>
+        <li>Your Token Factory key is stored encrypted.</li>
+        <li>Uploads stay in your project, are never used to train any model, and can be deleted any time.</li>
+        <li>Learning from your conversations is off until you turn it on.</li>
+        <li>Your login lasts on one browser until you log out.</li>
+      </ul>
+
+      <h2 id="faq">9. FAQ</h2>
+      <h3>Which models does Waypoint use?</h3>
+      <p>NVIDIA Nemotron on Nebius Token Factory: Nano for most work, Super and Ultra when needed, Super-VL for photos.</p>
+      <h3>Do I need to change my app?</h3>
+      <p>Only the base URL, the key and the model name. Anything that works with the OpenAI chat API works here.</p>
+      <h3>What if Nano gets something wrong?</h3>
+      <p>Each connection is tuned so Nano only answers where it matched the best model on your examples. Uncertain cases go to a bigger model, and anything you marked sensitive goes to a person.</p>
+      <h3>I lost my router key.</h3>
+      <p>Keys are shown once and can't be recovered. Sign up again to get a new project and key.</p>
+
+    </article>
+  </div>
+</main>
+<script>
+fetch('/api/session').then(r => r.json()).then(d => {  // download section: signed-out visitors of the hosted site only
+  if (!d.self_hosted && !d.signed_in) return;
+  document.querySelectorAll('[data-hosted]').forEach(e => e.remove());
+  const renum = el => el.forEach((e, i) => { e.textContent = e.textContent.replace(/^\d+\./, (i + 1) + '.'); });
+  renum(document.querySelectorAll('.doc h2')); renum(document.querySelectorAll('.toc a'));
+}).catch(() => {});
+</script>
+</body>
+</html>

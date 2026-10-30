@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Set Up Connection</title>
+<meta name="description" content="Set up your first Waypoint connection and calibrate it on your own conversations.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+<style>@keyframes spin { to { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }</style>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-3xl px-4 py-8 md:py-14">
+  <div class="flex items-center gap-3 md:gap-4"><span class="shrink-0 text-4xl leading-none md:text-5xl" aria-hidden="true">🔌</span><div class="min-w-0"><div class="text-xs font-semibold uppercase tracking-wide text-accent-dim dark:text-accent">Step 3</div><h1 class="mt-1 text-2xl font-semibold tracking-tight">Set up your connection</h1></div></div>
+  <p class="mt-2 text-sm muted">A connection is one job your assistant does, like answering support emails. Give us a few real conversations and we'll test Nemotron Nano, Super and Ultra on them, then pick the cheapest setup that still answers as well as Ultra.</p>
+
+  <form id="f" class="card mt-6 min-w-0" novalidate autocomplete="off">
+    <div class="card-h"><span class="card-t">Connection parameters</span><span class="text-xs muted"><span class="text-red-500">*</span> required</span></div>
+    <div class="space-y-5 p-4 md:p-6">
+
+      <div>
+        <label class="label" for="bt">Business type <span class="text-red-500">*</span></label>
+        <select id="bt" class="input" required>
+          <option value="">Choose one…</option>
+        </select>
+        <p class="mt-1 text-xs muted">Pick one to unlock sample files for every field below.</p>
+        <p class="err mt-1 hidden text-xs text-red-600 dark:text-red-400" role="alert"></p>
+      </div>
+
+      <div>
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-2"><label class="label !mb-0" for="name">Connection name <span class="text-red-500">*</span></label><span class="sample" data-field="name" data-file="name.txt"></span></div>
+        <input id="name" class="input font-mono" required maxlength="64" placeholder="support-email">
+        <p class="mt-1 text-xs muted">Letters, digits and <code>- _ .</code> only. Your app uses it as <code class="font-mono">model="<span id="nameEcho">support-email</span>"</code> in its API calls.</p>
+        <p class="err mt-1 hidden text-xs text-red-600 dark:text-red-400" role="alert"></p>
+      </div>
+
+      <div>
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-2"><label class="label !mb-0" for="desc">Task description <span class="text-red-500">*</span></label><span class="sample" data-field="desc" data-file="task.txt"></span></div>
+        <textarea id="desc" class="input" rows="4" required maxlength="4000" placeholder="What should the assistant do? Who writes in, through which channel, what tone, and what must go to a person?"></textarea>
+        <p class="err mt-1 hidden text-xs text-red-600 dark:text-red-400" role="alert"></p>
+      </div>
+
+      <div>
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-2"><label class="label !mb-0" for="sys">System prompt <span class="font-normal muted">(optional)</span></label><span class="sample" data-field="sys" data-file="system_prompt.txt"></span></div>
+        <textarea id="sys" class="input font-mono text-xs" rows="4" maxlength="20000"></textarea>
+        <p class="mt-1 text-xs muted">Leave blank and Nemotron Super drafts one for you — you can edit it later.</p>
+      </div>
+
+      <div>
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-2"><span class="label !mb-0">Reference conversations <span class="text-red-500">*</span></span><span class="sample" data-field="ex" data-file="conversations.jsonl"></span></div>
+        <p class="mb-2 text-xs muted">Each one is a customer message plus the reply you'd want to send. We recommend 20–50, covering your most common request types. Upload a file or paste below.</p>
+        <label class="btn btn-sm mb-2 cursor-pointer"><input id="file" type="file" accept=".jsonl,.json,.csv,.txt" class="hidden">Upload JSONL / CSV</label>
+        <textarea id="ex" class="input font-mono text-xs" rows="6" aria-label="Reference conversations" placeholder='{"input": "Where is my order #1234?", "expected": "Thanks for reaching out! Your order shipped yesterday…"}&#10;{"input": "…", "expected": "…"}&#10;&#10;or CSV with a header row: input,expected'></textarea>
+        <div id="prev" class="mt-2"></div>
+        <p class="err mt-1 hidden text-xs text-red-600 dark:text-red-400" role="alert"></p>
+      </div>
+    </div>
+    <div class="flex flex-col gap-3 border-t border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between md:px-6">
+      <p class="max-w-md text-xs muted">Every answer is graded by Nemotron Ultra against the reply you wrote. Takes a few minutes.</p>
+      <button id="go" class="btn btn-primary w-full sm:w-auto" type="submit">Create and calibrate</button>
+    </div>
+    <p id="formErr" class="hidden border-t border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300" role="alert"></p>
+  </form>
+
+  <div id="job" class="mt-6 hidden"></div>
+</main>
+<script>
+const rk = store.get('rk');  // the login cookie also signs these calls in
+const TYPES = [['E-commerce & retail', 'ecommerce-retail'], ['Banking & fintech', 'banking-fintech'], ['Insurance', 'insurance'],
+  ['Telecom & internet', 'telecom-internet'], ['SaaS / IT support', 'saas-it-support'], ['Travel & airlines', 'travel-airlines'],
+  ['Utilities', 'utilities'], ['Education', 'education'], ['Healthcare clinic (admin only, no medical advice)', 'healthcare-clinic'], ['Other', 'other']];
+const LABEL = { 'name.txt': 'name', 'task.txt': 'task description', 'system_prompt.txt': 'system prompt', 'conversations.jsonl': 'reference conversations' };
+const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_.\-]*$/;
+let existing = [], parsed = { rows: [] };
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { method: opts.method || 'GET', headers: { ...(rk ? { Authorization: 'Bearer ' + rk } : {}), 'Content-Type': 'application/json' },
+    body: opts.body ? JSON.stringify(opts.body) : undefined });
+  if (r.status === 401) { store.set('rk', null); location.replace('/login?expired=1'); throw new Error('Session expired'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof d.detail === 'string' ? d.detail : 'Request failed (HTTP ' + r.status + ')');
+  return d;
+}
+
+// ---- business type + samples
+$('#bt').insertAdjacentHTML('beforeend', TYPES.map(([t]) => `<option>${esc(t)}</option>`).join(''));
+const slug = () => (TYPES.find(([t]) => t === $('#bt').value) || [])[1];
+const sampleCache = {};
+const sample = f => sampleCache[slug() + f] || (sampleCache[slug() + f] = fetch(`/site/samples/${slug()}/${f}`)
+  .then(r => { if (!r.ok) throw new Error('Sample not found'); return r.text(); }));
+function paintSamples() {
+  document.querySelectorAll('.sample').forEach(s => {
+    // no sample for the connection name; others are download-only
+    s.innerHTML = slug() && s.dataset.file !== 'name.txt'
+      ? `<button type="button" class="btn btn-sm dl" aria-label="Download sample ${LABEL[s.dataset.file]}">`
+        + `<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
+        + `<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>Sample ${LABEL[s.dataset.file]}</button>`
+      : '';
+  });
+}
+document.addEventListener('click', async e => {
+  const s = e.target.closest('.sample'); if (!s || !e.target.closest('.dl, .use')) return;
+  e.preventDefault();
+  try {
+    const text = await sample(s.dataset.file);
+    if (e.target.closest('.dl')) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+      a.download = `${slug()}-${s.dataset.file}`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } else {
+      const el = $('#' + s.dataset.field);
+      el.value = s.dataset.field === 'name' ? text.trim().split(/\r?\n/)[0].trim() : text.trim();
+      el.dispatchEvent(new Event('input'));
+    }
+  } catch (err) { showErr(err.message); }
+});
+$('#bt').addEventListener('change', () => { paintSamples(); fieldErr('bt', ''); });
+
+// ---- reference conversations parser (JSONL, JSON array or CSV with input,expected)
+function parseCSV(s) {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) { if (c === '"') { if (s[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && s[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+function parseExamples(text) {
+  text = String(text || '').replace(/^﻿/, '').trim();
+  if (!text) return { rows: [] };
+  const str = v => v == null || v === '' ? null : (typeof v === 'string' ? v : JSON.stringify(v));
+  const done = rows => {
+    rows = rows.map(o => ({ input: str(o && o.input) || '', expected: str(o && o.expected) }));
+    const bad = rows.filter(r => !r.input.trim()).length;
+    return { rows: rows.filter(r => r.input.trim()), warn: bad ? `${bad} row(s) without a customer message were skipped.` : null };
+  };
+  if (text[0] === '[') { try { const a = JSON.parse(text); if (!Array.isArray(a)) throw 0; return done(a); } catch (e) { return { rows: [], err: 'That is not a valid JSON array.' }; } }
+  if (text[0] === '{') {
+    const out = [], lines = text.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) { const l = lines[i].trim(); if (!l) continue; try { out.push(JSON.parse(l)); } catch (e) { return { rows: [], err: `Line ${i + 1} is not valid JSON.` }; } }
+    return done(out);
+  }
+  const rows = parseCSV(text), hdr = (rows[0] || []).map(h => h.trim().toLowerCase());
+  const ii = hdr.indexOf('input'), ei = hdr.indexOf('expected');
+  if (ii < 0) return { rows: [], err: 'CSV needs a header row: input,expected' };
+  return done(rows.slice(1).map(r => ({ input: r[ii], expected: ei >= 0 ? r[ei] : null })));
+}
+function preview() {
+  parsed = parseExamples($('#ex').value);
+  const n = parsed.rows.length, noReply = parsed.rows.filter(r => r.expected == null).length, p = $('#prev');
+  if (!$('#ex').value.trim()) { p.innerHTML = ''; return; }
+  const notes = [parsed.warn, noReply && `${noReply} conversation(s) have no reply; Ultra's own answer will be the reference for those.`,
+    n && n < 20 && 'Fewer than 20 gives a rough result; 20–50 is best.', n > 50 && 'Only the first 50 are used.'].filter(Boolean);
+  p.innerHTML = (parsed.err ? `<div class="mb-2 text-xs text-red-600 dark:text-red-400">${esc(parsed.err)}</div>` : '') +
+    notes.map(m => `<div class="mb-1 text-xs text-amber-700 dark:text-amber-400">${esc(m)}</div>`).join('') +
+    (n ? `<div class="mb-1 text-xs muted"><b>${n}</b> conversation${n > 1 ? 's' : ''} found${n > 10 ? ' — showing the first 10' : ''}</div>
+    <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800"><table class="tbl table-fixed"><thead><tr><th class="th w-8">#</th><th class="th">Customer message</th><th class="th">Reply you'd want</th></tr></thead><tbody>
+    ${parsed.rows.slice(0, 10).map((r, i) => `<tr><td class="td muted">${i + 1}</td><td class="td max-w-[14rem] truncate" title="${esc(r.input)}">${esc(r.input)}</td><td class="td max-w-[14rem] truncate" title="${esc(r.expected)}">${r.expected == null ? '<span class="muted">—</span>' : esc(r.expected)}</td></tr>`).join('')}
+    </tbody></table></div>` : '');
+  if (n && !parsed.err) fieldErr('ex', '');
+}
+$('#ex').addEventListener('input', preview);
+$('#file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (f.size > 5e6) return fieldErr('ex', 'That file is larger than 5 MB.');
+  $('#ex').value = await f.text(); preview(); e.target.value = '';
+});
+$('#name').addEventListener('input', () => { $('#nameEcho').textContent = $('#name').value.trim() || 'support-email'; fieldErr('name', ''); });
+$('#desc').addEventListener('input', () => fieldErr('desc', ''));
+
+// ---- validation + submit
+const showErr = m => { $('#formErr').textContent = m; $('#formErr').classList.toggle('hidden', !m); };
+function fieldErr(id, m) {
+  const p = $('#' + id).closest('.space-y-5 > div').querySelector('.err');
+  if (p) { p.textContent = m; p.classList.toggle('hidden', !m); }
+  $('#' + id).classList.toggle('!border-red-500', !!m);
+  return !m;
+}
+function validate() {
+  const name = $('#name').value.trim(), desc = $('#desc').value.trim();
+  const ok = [
+    fieldErr('bt', $('#bt').value ? '' : 'Choose your business type.'),
+    fieldErr('name', !name ? 'Give the connection a name.' : !NAME_RE.test(name) ? 'Use letters, digits and - _ . only, starting with a letter or digit.'
+      : name.toLowerCase() === 'auto' ? '"auto" is reserved, pick another name.'
+      : existing.includes(name) ? `You already have a connection called "${name}".` : ''),
+    fieldErr('desc', desc.length < 20 ? 'Describe the task in a sentence or two (at least 20 characters).' : ''),
+    fieldErr('ex', parsed.err ? parsed.err : !parsed.rows.length ? 'Add at least one reference conversation.' : ''),
+  ];
+  const first = ['bt', 'name', 'desc', 'ex'][ok.indexOf(false)];
+  if (first) $('#' + first).focus();
+  return !first;
+}
+$('#f').addEventListener('submit', async e => {
+  e.preventDefault(); showErr('');
+  preview();
+  if (!validate()) return;
+  const body = { name: $('#name').value.trim(), description: $('#desc').value.trim(), system_prompt: $('#sys').value.trim() || null,
+    examples: parsed.rows.slice(0, 50), check: 'judge' };
+  const go = $('#go'); go.disabled = true; go.textContent = 'Starting…';
+  try {
+    const r = await api('/api/routes', { method: 'POST', body });
+    $('#f').classList.add('hidden');
+    poll({ id: r.job_id, name: body.name, n: body.examples.length, started: Date.now() });
+  } catch (err) { showErr(err.message === 'Failed to fetch' ? 'Network error: is the router running?' : err.message); }
+  finally { go.disabled = false; go.textContent = 'Create and calibrate'; }
+});
+
+// ---- calibration job
+const box = $('#job');
+async function poll(j) {
+  box.classList.remove('hidden'); window.scrollTo(0, 0);
+  for (;;) {
+    const secs = Math.round((Date.now() - j.started) / 1000);
+    box.innerHTML = `<div class="card p-5 md:p-6"><div class="flex items-center gap-3">
+      <svg class="spin h-6 w-6 shrink-0 text-accent" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+      <div class="min-w-0"><div class="font-medium">Testing Nano, Super and Ultra on your conversations…</div>
+      <div class="text-sm muted">${j.n} conversations for <span class="font-mono">${esc(j.name)}</span> · ${secs}s. This usually takes a few minutes; you can keep this page open.</div></div></div>
+      <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full bg-accent transition-all" style="width:${Math.min(95, 5 + secs)}%"></div></div></div>`;
+    await new Promise(r => setTimeout(r, 2000));
+    let r;
+    try { r = await api('/api/jobs/' + encodeURIComponent(j.id)); } catch (e) { if (/not found/.test(e.message)) return failed(j, e.message); continue; }
+    if (r.status === 'done') return done(j, r.result || {});
+    if (r.status && r.status !== 'running') return failed(j, (r.result && (r.result.error || r.result.detail)) || 'unknown error');
+  }
+}
+function done(j, r) {
+  const tier = t => ({ nano: 'Nano', super: 'Super', ultra: 'Ultra' }[t] || t);
+  const policy = r.policy === 'cascade'
+    ? `Nano answers first. When it's less than ${Math.round((r.threshold || 0) * 100)}% sure, the question goes to ${tier(r.escalate_to || 'super')} instead.`
+    : r.tier === 'nano' ? 'Nano handles every question: it matched Ultra on your conversations.'
+    : `Every question goes to ${tier(r.tier)}: Nano wasn't accurate enough on these conversations to take any on its own.`;
+  const acc = r.accuracies || {};
+  const snippet = `client = OpenAI(base_url="${location.origin}/v1", api_key="YOUR_ROUTER_KEY")\nreply = client.chat.completions.create(model="${j.name}", messages=[{"role": "user", "content": "Hi!"}])`;
+  box.innerHTML = `<div class="card p-5 md:p-6">
+    <div class="flex items-center gap-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent/15 text-accent"><svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5 9-10"/></svg></span>
+      <div><h2 class="text-lg font-semibold">Your connection <span class="font-mono">${esc(j.name)}</span> is ready</h2><p class="text-sm muted">Tested on ${esc(r.n || j.n)} of your conversations.</p></div></div>
+    <p class="mt-4 text-sm"><b>How it will answer:</b> ${esc(policy)}</p>
+    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+      <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"><div class="label">Handled by Nano (cheapest)</div><div class="text-2xl font-semibold tabular-nums">${pctF(r.coverage)}</div><div class="text-xs muted">of your conversations</div></div>
+      <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"><div class="label">Accuracy vs Ultra</div><div class="text-2xl font-semibold tabular-nums">${pctF(r.nano_acc_above)} <span class="text-sm font-normal muted">vs ${pctF(r.ultra_acc)}</span></div><div class="text-xs muted">Nano on the questions it keeps vs Ultra on all of them</div></div>
+    </div>
+    <p class="mt-3 text-xs muted">Graded by Nemotron Ultra against your replies. Each model alone: Nano ${pctF(acc.nano)}, Super ${pctF(acc.super)}, Ultra ${pctF(acc.ultra)}.</p>
+    <div class="mt-5"><div class="label">Use it from your app (Python, OpenAI SDK)</div><pre class="code whitespace-pre-wrap break-all">${esc(snippet)}</pre></div>
+    <div class="mt-5 flex flex-wrap gap-2"><a href="/dashboard#routes" class="btn btn-primary">Go to dashboard</a><a href="/onboarding" class="btn">Set up another connection</a></div></div>`;
+}
+function failed(j, msg) {
+  box.innerHTML = `<div class="card border-red-300 p-5 dark:border-red-500/40"><div class="font-medium">Calibration of <span class="font-mono">${esc(j.name)}</span> didn't finish</div>
+    <p class="mt-1 break-words text-sm muted">${esc(msg)}</p><button id="retry" class="btn mt-4" type="button">Back to the form</button></div>`;
+  $('#retry').addEventListener('click', () => { box.classList.add('hidden'); $('#f').classList.remove('hidden'); });
+}
+
+// ---- prefill
+(async () => {
+  try {
+    const [me, routes] = await Promise.all([api('/api/me'), api('/api/routes')]);
+    existing = (routes || []).map(r => r.name);
+    const bt = String(me.business_type || '').trim();
+    if (bt && !$('#bt').value) { $('#bt').value = TYPES.some(([t]) => t === bt) ? bt : 'Other'; paintSamples(); }
+  } catch (e) { showErr(e.message === 'Failed to fetch' ? 'Network error: is the router running?' : e.message); }
+})();
+</script>
+</body>
+</html>

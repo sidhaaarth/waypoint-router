@@ -1,0 +1,44 @@
+# The repo holds the app only (app/, static/, Docker files). Everything below stays local.
+
+# --- secrets & local state ---------------------------------------------------
+.env
+*.secret
+*.db
+*.db-shm
+*.db-wal
+probe_results.json
+
+# --- python / tooling ---------------------------------------------------------
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# --- Claude / agent files ------------------------------------------------------
+.claude/
+CLAUDE.md
+**/CLAUDE.md
+
+# --- tests, evaluation and benchmarking ---------------------------------------
+tests/
+bench/
+
+# --- demo: Trailhead Outfitters store, its rulebook, seed data and scripts ----
+demo/
+store/
+rules/
+scripts/
+start_demo.ps1
+
+# --- datasets and results (ABCD, review photos, memory index, benchmark snapshots)
+data/
+
+# --- planning and research notes ----------------------------------------------
+PLAN.md
+DECISIONS.md
+checkpoints.md
+todo.md
+research/
+
+# --- demo script (local only) ------------------------------------------------
+speech-writeup.md

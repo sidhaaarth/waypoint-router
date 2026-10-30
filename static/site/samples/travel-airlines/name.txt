@@ -1,0 +1,3 @@
+traveller-help
+
+Why this name: it covers the whole trip (bookings, changes, baggage, check-in, delays, refunds) rather than one channel or one model. It reads well in code: model="traveller-help". If you later automate disruption rebooking or compensation claims, give those their own connections so they're calibrated on their own, higher-stakes conversations.

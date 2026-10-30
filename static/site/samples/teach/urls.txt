@@ -1,0 +1,11 @@
+# Replace these with your own help-centre and policy pages, one per line.
+https://help.yourstore.example/returns
+https://yourbank.example/help/card-disputes
+https://yourinsurer.example/claims/how-to-claim
+https://support.yourtelco.example/outages
+https://docs.yourapp.example/billing/refunds
+https://yourairline.example/help/changing-a-booking
+https://yourenergy.example/help/meter-readings
+https://students.youruniversity.example/withdrawals
+https://yourclinic.example/appointments
+https://help.yourdelivery.example/late-orders

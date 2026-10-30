@@ -1,0 +1,3 @@
+store-support
+
+Why this name: it says exactly what the connection does (customer support for the store) and nothing about which model runs it, so it stays accurate as the router moves traffic between Nano, Super and Ultra. Short, lowercase and hyphenated, it is easy to type in code: model="store-support". If you later add a separate job (for example writing product descriptions), give it its own connection such as "product-copy" so each one is calibrated on its own conversations.

@@ -1,0 +1,3 @@
+policy-support
+
+Why this name: it is about helping existing and prospective policyholders with their policies (cover questions, documents, claims status, payments), and it stays true whether a question is about home, car or travel cover. It reads clearly in code: model="policy-support". Keep claims decisions and underwriting with your adjusters; if you later automate first notice of loss, give it its own connection such as "claims-intake".

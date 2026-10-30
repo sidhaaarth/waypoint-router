@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>How It Works</title>
+<meta name="description" content="The steps every support message goes through in the Waypoint, in plain language.">
+<script src="/site/site.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>tailwind.config = TW;</script>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<main class="mx-auto max-w-6xl px-4">
+  <section class="py-12 md:py-16">
+    <div class="flex items-center gap-3 md:gap-4"><span class="shrink-0 text-4xl leading-none md:text-5xl" aria-hidden="true">⚙️</span><div class="min-w-0"><h1 class="text-3xl font-semibold tracking-tight md:text-4xl">How it works</h1></div></div>
+    <p class="mt-3 max-w-3xl text-base muted">Think of a good support desk. A junior agent reads every message, looks up the order, checks the rulebook, and only calls a senior colleague when something is unclear or risky. The router does the same with Nemotron models: Nano is the junior agent, Super and Ultra are the seniors, and plain code does anything that must be exact.</p>
+    <div class="mt-5 flex flex-wrap gap-2 text-xs" aria-label="Legend">
+      <span class="badge b-gray"><span class="h-2 w-2 rounded-full" style="background:#3b82f6"></span>Code / rules</span>
+      <span class="badge b-gray"><span class="h-2 w-2 rounded-full" style="background:#38bdf8"></span>Your store</span>
+      <span class="badge tier-nano"><span class="h-2 w-2 rounded-full" style="background:#76b900"></span>Nano</span>
+      <span class="badge tier-super"><span class="h-2 w-2 rounded-full" style="background:#f59e0b"></span>Super (backup)</span>
+      <span class="badge tier-ultra"><span class="h-2 w-2 rounded-full" style="background:#a78bfa"></span>Ultra (rare)</span>
+      <span class="badge b-gray"><span class="h-2 w-2 rounded-full" style="background:#f472b6"></span>Super-VL vision</span>
+      <span class="badge b-gray"><span class="h-2 w-2 rounded-full" style="background:#eab308"></span>Tavily web search</span>
+    </div>
+  </section>
+
+  <section aria-labelledby="pipe">
+    <h2 id="pipe" class="h2">One message, step by step</h2>
+    <ol id="steps" class="relative mt-8 space-y-4 before:absolute before:bottom-6 before:left-[15px] before:top-6 before:w-px before:bg-zinc-300 dark:before:bg-zinc-700"></ol>
+  </section>
+
+  <section class="mt-16" aria-labelledby="layer">
+    <h2 id="layer" class="h2">Around every call: the router layer</h2>
+    <p class="mt-2 max-w-3xl text-sm muted">These apply to every request, whether it goes through the support pipeline above or is a plain chat call from your own app.</p>
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="card p-5"><div class="text-sm font-semibold">Confidence cascade</div><p class="mt-2 text-sm muted">For simple questions, Nano answers first and the router reads how sure it was about each word. Below a cut-off, tuned once per route on your own examples, the question goes to Super or Ultra.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Rate-limit pacing</div><p class="mt-2 text-sm muted">Reads Token Factory's limit headers and queues requests, so customer-facing calls go before background work. Keeping usage in the 50–80% band lets your dynamic limit grow.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Fallback</div><p class="mt-2 text-sm muted">If a model is busy or erroring, the request retries once, then moves to a sister model (Nano → Lightning, Super → Super-VL, Ultra → Super) instead of failing.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Cost per customer</div><p class="mt-2 text-sm muted">Spend is grouped by the standard OpenAI <code class="font-mono text-xs">user</code> field. Set a budget per customer; at 90% they are moved to Nano only.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">Prompt-cache hints</div><p class="mt-2 text-sm muted">Flags dates, names or IDs at the start of a system prompt, which stop Token Factory from reusing it, and shows your cache hit rate. It suggests a fix; it never rewrites your prompt.</p></div>
+      <div class="card p-5"><div class="text-sm font-semibold">LangSmith tracing</div><p class="mt-2 text-sm muted">Every Token Factory call is traced and nested under its request, so you can open one reply and see each model call, its tokens and its time. Message text is only sent with your opt-in.</p></div>
+    </div>
+  </section>
+
+  <section class="mt-16 card p-6">
+    <div class="text-lg font-semibold">Using it from your app</div>
+    <p class="mt-1 text-sm muted">It speaks the OpenAI API. Point any OpenAI SDK at the router and use your router key.</p>
+    <pre class="code mt-4">from openai import OpenAI
+client = OpenAI(base_url="<span id="base">https://your-router/v1</span>", api_key="rk-...")
+client.chat.completions.create(model="support", user="customer-42",
+    messages=[{"role": "user", "content": "My boots arrived torn, order 1234567890"}])</pre>
+    <div class="mt-4 flex flex-wrap gap-3"><a href="/signup" class="btn btn-primary">Get a router key</a><a href="/results" class="btn">See what it scored</a></div>
+  </section>
+</main>
+<script>
+$('#base').textContent = location.origin + '/v1';
+const C = { code: '#3b82f6', store: '#38bdf8', nano: '#76b900', super: '#f59e0b', ultra: '#a78bfa', vision: '#f472b6', tavily: '#eab308' };
+const STEPS = [
+  ['Turn check', ['code', 'nano', 'super'], 'In a chat, is this message answering our last question, asking something new, or both? Short replies like "yes" or "by mail" are sorted by code; the rest by Nano, with Super if unsure. A new question gets answered first, then the open task is followed up.'],
+  ['Sees the photo', ['vision'], 'If the customer attached a photo, the vision model names the problem ("damaged in transit 0.92"). A second check asks whether the photo actually shows what the customer describes. A clear mismatch stops all refunds and asks for the right photo. Text-only stores can switch this off and pay nothing.'],
+  ['Recalls similar past cases', ['store'], 'Waypoint searches your solved conversations for the 3 most like this one (a meaning-based search, not keywords) and shows them to Nano as worked examples. No training and no GPU: this is how Nano reaches Super-level accuracy for a fraction of the cost. It grows as you add good conversations.'],
+  ['Understands the request', ['nano', 'super'], 'Nano picks what the customer wants from your store\'s list of request types: return, refund, where is my order, password reset… using those past cases as examples. If it isn\'t sure, Super decides.'],
+  ['Pulls out the details', ['code', 'nano', 'store'], 'Order numbers, emails and phone numbers are copied by exact pattern matching, because models sometimes mis-copy digits. Nano reads names and anything else. When the store has a record, the store wins: a customer saying "I\'m gold" doesn\'t make them gold.'],
+  ['Store check', ['store'], 'Looks the customer and order up in your store (Shopify-shaped). Email and phone on file are masked before the reply writer sees them.'],
+  ['Rules engine', ['code'], 'Your written policy, stored as data and checked by code: is this allowed, what\'s missing, which actions to take. Choices that belong to the customer, like refund method, are asked, never guessed.'],
+  ['Product look-up', ['tavily'], 'Only for product questions your store can\'t answer, like specs or care. One search, on the brand\'s own site. Only real findings reach the reply; if nothing is found, nothing is made up.'],
+  ['Acts', ['store'], 'Runs the store actions the rules allow: validate the purchase, update the order, start the refund. A failed action is explained to the customer, not turned into a repeat question.'],
+  ['Writes the reply', ['nano', 'ultra'], 'Calm, single issue → Nano. Upset or several issues → three Nano drafts merged into one. Escalations, denials or large amounts → Ultra. Super tested best value as a writer in our last run and is the next one being added.'],
+  ['Safety check', ['code'], 'Code compares the reply with the facts it was given and flags invented names, numbers or promises before the reply goes out.'],
+  ['Decision record', ['code'], 'Each reply stores which model did which step, how sure it was, what the store said and what it cost. Customer details are left out unless you opt in.'],
+];
+$('#steps').innerHTML = STEPS.map(([t, who, body], i) => `
+  <li class="relative flex gap-4">
+    <span class="relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-zinc-300 bg-white text-xs font-semibold tabular-nums dark:border-zinc-700 dark:bg-zinc-900">${i + 1}</span>
+    <div class="card min-w-0 flex-1 p-4">
+      <div class="flex flex-wrap items-center gap-2"><span class="text-sm font-semibold">${t}</span>
+        ${who.map(w => `<span class="h-2.5 w-2.5 rounded-full" style="background:${C[w]}" title="${w}"></span>`).join('')}</div>
+      <p class="mt-1.5 text-sm muted">${body}</p>
+    </div>
+  </li>`).join('');
+</script>
+</body>
+</html>

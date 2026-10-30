@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="/brand/waypoint-mark-64.png">
+<title>Waypoint</title>
+<script>
+  // Theme before paint. Default dark.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('theme'); } catch (e) {}
+    if (t === 'light') document.documentElement.classList.remove('dark');
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: {
+      fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+      colors: { accent: { DEFAULT: '#76b900', soft: '#8fd400', dim: '#5a8f00' } }
+    } }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style type="text/tailwindcss">
+  @layer components {
+    .card { @apply rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70 dark:shadow-none; }
+    .card-h { @apply flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800; }
+    .card-t { @apply text-sm font-semibold text-zinc-900 dark:text-zinc-100; }
+    .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800; }
+    .btn-primary { @apply border-accent bg-accent text-zinc-950 hover:bg-accent-soft dark:border-accent dark:bg-accent dark:text-zinc-950 dark:hover:bg-accent-soft; }
+    .btn-sm { @apply px-2 py-1 text-xs; }
+    .input { @apply w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/30 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder-zinc-600; }
+    .label { @apply mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400; }
+    .muted { @apply text-zinc-500 dark:text-zinc-400; }
+    .badge { @apply inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] font-medium leading-4; }
+    .b-gray { @apply border-zinc-300 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300; }
+    .b-amber { @apply border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300; }
+    .b-red { @apply border-red-300 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300; }
+    .b-green { @apply border-lime-300 bg-lime-50 text-lime-800 dark:border-accent/30 dark:bg-accent/10 dark:text-accent-soft; }
+    .tier-nano { @apply border-lime-300 bg-lime-50 text-lime-800 dark:border-accent/30 dark:bg-accent/10 dark:text-accent-soft; }
+    .tier-super { @apply border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-300; }
+    .tier-ultra { @apply border-violet-300 bg-violet-50 text-violet-800 dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-300; }
+    .th { @apply whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400; }
+    .td { @apply whitespace-nowrap px-3 py-2 text-sm text-zinc-800 dark:text-zinc-200; }
+    .tbl { @apply min-w-full divide-y divide-zinc-200 dark:divide-zinc-800; }
+    .tbl tbody { @apply divide-y divide-zinc-100 dark:divide-zinc-800/70; }
+    .navlink { @apply flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100; }
+    .navlink.active { @apply bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white; }
+    .seg { @apply inline-flex rounded-lg border border-zinc-300 p-0.5 dark:border-zinc-700; }
+    .seg button { @apply rounded-md px-2.5 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400; }
+    .seg button.on { @apply bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900; }
+    .code { @apply overflow-x-auto rounded-lg border border-zinc-200 bg-zinc-50 p-3 font-mono text-[12.5px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-black/40 dark:text-zinc-200; }
+    .empty { @apply flex flex-col items-center justify-center gap-1 px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400; }
+  }
+  body { font-feature-settings: "cv11", "ss01"; }
+  .nav-scroll { scrollbar-width: none; }
+  .nav-scroll::-webkit-scrollbar { display: none; }
+  mark.lint { background: rgba(245, 158, 11, .28); color: inherit; border-radius: 3px; padding: 0 1px; box-shadow: inset 0 -1.5px 0 #f59e0b; }
+  @keyframes pulse-dot { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+  .pulse { animation: pulse-dot 1.6s ease-in-out infinite; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .spin { animation: spin .9s linear infinite; }
+</style>
+<style id="light-contrast">
+/* Light theme: crisper edges. The zinc-200 borders nearly vanished on the near-white page. Dark theme untouched. */
+html:not(.dark) body { background-color: #eceff3; }
+html:not(.dark) .card { border-color: #b6bec9; box-shadow: 0 1px 2px rgba(16, 24, 40, .08), 0 1px 1px rgba(16, 24, 40, .04); }
+html:not(.dark) .card-h,
+html:not(.dark) .border-zinc-200, html:not(.dark) .border-gray-200, html:not(.dark) .border-slate-200 { border-color: #c3cad3; }
+html:not(.dark) .btn:not(.btn-primary), html:not(.dark) .input,
+html:not(.dark) .border-zinc-300, html:not(.dark) .border-gray-300, html:not(.dark) .border-slate-300 { border-color: #a7afba; }
+html:not(.dark) .b-gray { border-color: #b6bec9; }
+/* Code comments in VS Code's colours */
+.code .cm { color: #008000; }
+html.dark .code .cm { color: #6a9955; }
+</style>
+</head>
+<body class="bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+
+
+<div id="shell" class="min-h-screen md:flex">
+  <aside id="sidebar" class="hidden border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80 md:sticky md:top-0 md:flex md:h-screen md:w-60 md:shrink-0 md:flex-col md:border-b-0 md:border-r">
+    <div class="flex items-center justify-between gap-2 px-4 py-3 md:py-5">
+      <a href="#overview" class="flex min-w-0 items-center gap-2">
+        <img src="/brand/waypoint-mark-64.png" alt="" class="h-7 w-7 shrink-0 rounded-md" width="28" height="28">
+        <span class="min-w-0">
+          <span class="block truncate text-sm font-semibold">Waypoint</span>
+          <span id="projName" class="block truncate text-[11px] muted"></span>
+        </span>
+      </a>
+      <div class="flex items-center gap-1 md:hidden">
+        <span class="demo-badge hidden badge b-amber">demo</span>
+        <button class="theme-btn btn btn-sm" title="Toggle theme" aria-label="Toggle theme"></button>
+        <button class="logout-btn btn btn-sm">Log out</button>
+      </div>
+    </div>
+    <nav id="nav" class="nav-scroll flex gap-1 overflow-x-auto px-3 pb-2 md:flex-1 md:flex-col md:overflow-visible md:pb-0"></nav>
+    <div class="hidden items-center justify-between gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800 md:flex">
+      <span class="demo-badge hidden badge b-amber">demo data</span>
+      <span class="text-[11px] muted">v0.1</span>
+      <button class="logout-btn btn btn-sm">Log out</button>
+      <button class="theme-btn btn btn-sm" title="Toggle theme" aria-label="Toggle theme"></button>
+    </div>
+  </aside>
+  <main class="min-w-0 flex-1 px-4 py-5 md:px-8 md:py-8">
+    <div id="firstRun" class="mx-auto mb-6 hidden max-w-6xl"></div>
+    <div id="view" class="mx-auto max-w-6xl"></div>
+  </main>
+</div>
+
+<div id="toasts" class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4 sm:inset-x-auto sm:right-4 sm:items-end"></div>
+
+<script>
+'use strict';
+// ---------- utils ----------
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => (v == null || v === '' || isNaN(Number(v))) ? null : Number(v);
+
+const mem = {};
+const store = {
+  get(k) { try { const v = localStorage.getItem(k); if (v != null) return v; } catch (e) {} return k in mem ? mem[k] : null; },
+  set(k, v) {
+    if (v == null) delete mem[k]; else mem[k] = v;
+    try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {}
+  }
+};
+
+const DEMO = new URLSearchParams(location.search).get('demo') === '1';
+const ORIGIN = window.location.origin;
+const BASE_URL = ORIGIN + '/v1';
+
+function money(v) {
+  v = num(v); if (v == null) return '—';
+  const a = Math.abs(v);
+  if (a === 0) return '$0.00';
+  if (a < 0.01) return (v < 0 ? '-$' : '$') + a.toFixed(Math.min(10, 1 - Math.floor(Math.log10(a))));
+  if (a < 1) return (v < 0 ? '-$' : '$') + a.toFixed(4);
+  return (v < 0 ? '-$' : '$') + a.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const int = v => num(v) == null ? '—' : Math.round(Number(v)).toLocaleString();
+const pctF = (v, d = 0) => num(v) == null ? '—' : (Number(v) * 100).toFixed(d) + '%';   // fraction -> %
+const pctP = (v, d = 0) => num(v) == null ? '—' : Number(v).toFixed(d) + '%';          // already percent
+const ms = v => num(v) == null ? '—' : (v >= 1000 ? (v / 1000).toFixed(2) + ' s' : Math.round(v) + ' ms');
+function toDate(ts) {
+  if (ts == null) return null;
+  if (typeof ts === 'number' || /^\d+(\.\d+)?$/.test(String(ts))) { const n = Number(ts); return new Date(n < 1e12 ? n * 1000 : n); }
+  const d = new Date(ts); return isNaN(d) ? null : d;
+}
+function ago(ts) {
+  const d = toDate(ts); if (!d) return '—';
+  const s = Math.max(0, (Date.now() - d.getTime()) / 1000);
+  if (s < 60) return Math.floor(s) + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+const dur = s => { s = num(s); if (s == null) return '—'; s = Math.round(s); return s >= 60 ? Math.floor(s / 60) + 'm ' + (s % 60) + 's' : s + 's'; };
+
+function toast(msg, kind = 'error') {
+  const el = document.createElement('div');
+  const cls = kind === 'error' ? 'border-red-300 bg-red-50 text-red-800 dark:border-red-500/40 dark:bg-red-950/90 dark:text-red-200'
+    : 'border-lime-300 bg-lime-50 text-lime-900 dark:border-accent/40 dark:bg-zinc-900/95 dark:text-lime-200';
+  el.className = 'pointer-events-auto w-full max-w-sm rounded-lg border px-4 py-3 text-sm shadow-lg ' + cls;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, kind === 'error' ? 6000 : 3000);
+}
+
+async function copy(text, btn) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch (e2) {}
+    ta.remove();
+  }
+  if (btn) { const o = btn.innerHTML; btn.textContent = ok ? 'Copied' : 'Copy failed'; setTimeout(() => { btn.innerHTML = o; }, 1400); }
+  else if (!ok) toast('Copy failed — select and copy manually');
+}
+const ICON_COPY = '<svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+const copyBtn = (text, label = 'Copy') => `<button class="btn btn-sm" data-copy="${esc(text)}">${ICON_COPY}<span>${label}</span></button>`;
+document.addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copy(b.getAttribute('data-copy'), b); });
+
+// ---------- API ----------
+function errMsg(d) {
+  if (!d) return '';
+  if (typeof d === 'string') return d.slice(0, 240);
+  if (d.error && d.error.message) return d.error.message;
+  if (d.detail != null) {
+    if (typeof d.detail === 'string') return d.detail;
+    if (Array.isArray(d.detail)) return d.detail.map(x => (x && x.msg) ? (x.loc ? x.loc.slice(-1)[0] + ': ' : '') + x.msg : JSON.stringify(x)).join('; ');
+    return JSON.stringify(d.detail);
+  }
+  return '';
+}
+async function setVision(name, box) {  // per-route photo analysis switch (PUT /api/routes/{name}/settings)
+  box.disabled = true;
+  try {
+    const r = await api('/api/routes/' + encodeURIComponent(name) + '/settings', { method: 'PUT', body: { vision: box.checked } });
+    box.checked = !!(r && r.vision !== undefined ? r.vision : box.checked);
+    toast(`Photo analysis ${box.checked ? 'on' : 'off'} for ${name}`, 'ok');
+  } catch (e) { box.checked = !box.checked; toast(e.message); }
+  finally { box.disabled = false; }
+}
+
+async function api(path, opts = {}) {
+  const method = opts.method || 'GET';
+  if (DEMO) { await sleep(120 + Math.random() * 200); return Mock.handle(method, path, opts.body); }
+  const headers = { 'Accept': 'application/json' };
+  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+  const rk = opts.rk || store.get('rk');
+  if (rk && !opts.noAuth) headers.Authorization = 'Bearer ' + rk;
+  let res;
+  try { res = await fetch(path, { method, headers, body: opts.body === undefined ? undefined : JSON.stringify(opts.body) }); }
+  catch (e) { throw new Error('Network error — is the router running?'); }
+  const txt = await res.text();
+  let data = null; try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = txt; }
+  if (!res.ok) {
+    const err = new Error(errMsg(data) || (res.status + ' ' + res.statusText)); err.status = res.status;
+    if (res.status === 401 && rk && !opts.rk) { signOut(true); }
+    throw err;
+  }
+  return data;
+}
+
+// ---------- app state ----------
+const S = { me: null, hours: [1, 24, 168].includes(Number(store.get('hours'))) ? Number(store.get('hours')) : 24, gen: 0, timer: null, refresh: null, charts: {} };
+const VIEWS = [
+  ['overview', 'Overview', '<path d="M3 13h4v8H3zM10 3h4v18h-4zM17 9h4v12h-4z"/>'],
+  ['routes', 'Routes', '<path d="M6 3v6a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v6"/><circle cx="6" cy="3" r="0.5"/><path d="M18 3v6"/>'],
+  ['customers', 'Customers', '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>'],
+  ['requests', 'Requests', '<path d="M4 6h16M4 12h16M4 18h10"/>'],
+  ['limits', 'Rate limits', '<path d="M12 14l4-4"/><path d="M3.5 18a9 9 0 1 1 17 0"/>'],
+  ['settings', 'Settings', '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'],
+];
+$('#nav').innerHTML = VIEWS.map(([k, label, icon]) =>
+  `<a href="#${k}" data-view="${k}" class="navlink"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg>${label}</a>`).join('') +
+  `<a href="/docs" class="navlink"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h10l6 6v10H4z"/><path d="M14 4v6h6M8 14h8M8 17h5"/></svg>Docs</a>`;
+if (DEMO) $$('.demo-badge').forEach(e => e.classList.remove('hidden'));
+
+const isDark = () => document.documentElement.classList.contains('dark');
+function paintThemeBtns() {
+  const sun = '<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  const moon = '<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>';
+  $$('.theme-btn').forEach(b => b.innerHTML = isDark() ? sun : moon);
+}
+function toggleTheme() {
+  document.documentElement.classList.toggle('dark');
+  store.set('theme', isDark() ? 'dark' : 'light');
+  paintThemeBtns();
+  // Rebuild charts with new colors without re-rendering (keeps form input).
+  Object.values(S.charts).forEach(c => { try { c.destroy(); } catch (e) {} });
+  S.charts = {};
+  if (S.refresh) S.refresh(true);
+}
+$$('.theme-btn').forEach(b => b.addEventListener('click', toggleTheme));
+$$('.logout-btn').forEach(b => b.addEventListener('click', () => signOut()));
+paintThemeBtns();
+
+async function signOut(expired) {  // log out: end the cookie session, forget the key, back to the site
+  store.set('rk', null); S.me = null;
+  try { await fetch('/api/session', { method: 'DELETE' }); } catch (e) {}
+  location.href = expired ? '/login?expired=1' : '/';
+}
+
+function clearView() {
+  S.gen++;
+  clearInterval(S.timer); S.timer = null; S.refresh = null;
+  Object.values(S.charts).forEach(c => { try { c.destroy(); } catch (e) {} });
+  S.charts = {};
+}
+function autoRefresh(fn, every = 10000) {
+  S.refresh = fn;
+  S.timer = setInterval(() => { if (!document.hidden) fn(true); }, every);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.refresh) S.refresh(true); });
+window.addEventListener('hashchange', render);
+
+async function render() {
+  clearView();
+  const rk = store.get('rk');
+  const view = (location.hash || '').slice(1) || 'overview';
+  const el = $('#view');
+  $('#sidebar').classList.remove('hidden'); $('#sidebar').classList.add('md:flex');
+  const v = Views[view] ? view : 'overview';
+  $$('#nav [data-view]').forEach(a => a.classList.toggle('active', a.dataset.view === v));
+  if (!S.me && !DEMO) loadMe();
+  $('#firstRun').classList.add('hidden');
+  if (v !== 'routes') api('/api/routes').then(l => { if (Array.isArray(l) && !l.length) { $('#firstRun').innerHTML = FIRST_RUN; $('#firstRun').classList.remove('hidden'); } }).catch(() => {});
+  Views[v](el, S.gen);
+}
+async function loadMe() {
+  try { S.me = await api('/api/me'); $('#projName').textContent = S.me.name || S.me.project_id || ''; }
+  catch (e) { if (e.status !== 401) toast(e.message); }
+}
+
+const VIEW_EMOJI = { Overview: '📈', Routes: '🔀', Customers: '👥', Requests: '📨', 'Rate limits': '⏱️', Settings: '🛠️' };
+const head = (title, sub, right = '', chat = true) => `
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div class="flex min-w-0 items-center gap-3">${VIEW_EMOJI[title] ? `<span class="shrink-0 text-3xl leading-none" aria-hidden="true">${VIEW_EMOJI[title]}</span>` : ''}<div class="min-w-0"><h1 class="text-xl font-semibold tracking-tight">${title}</h1>${sub ? `<p class="mt-1 text-sm muted">${sub}</p>` : ''}</div></div>
+    <div class="flex flex-wrap items-center gap-2">${right}${chat ? `<a href="/chat" class="btn btn-primary" title="Conversations and live chat" aria-label="Open live chat" style="height:2.25rem;width:2.25rem;padding:0;border-radius:9999px"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></a>` : ''}</div>
+  </div>`;
+const tierBadge = t => { t = String(t || '').toLowerCase(); const c = ['nano', 'super', 'ultra'].includes(t) ? 'tier-' + t : 'b-gray'; return `<span class="badge ${c}">${esc(t || '—')}</span>`; };
+const TIER = { nano: '#76b900', super: '#f59e0b', ultra: '#a78bfa' };
+
+// Escape code and colour its # comments (a # inside quotes, like "order #1234", is not a comment).
+function hlCode(text) {
+  return String(text).split('\n').map(line => {
+    let q = null;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (q) { if (ch === q) q = null; continue; }
+      if (ch === '"' || ch === "'") { q = ch; continue; }
+      if (ch === '#' && (i === 0 || /\s/.test(line[i - 1]))) return esc(line.slice(0, i)) + `<span class="cm">${esc(line.slice(i))}</span>`;
+    }
+    return esc(line);
+  }).join('\n');
+}
+function snippets(rk) {
+  const key = rk || 'rk-...';
+  const py = `from openai import OpenAI
+
+client = OpenAI(base_url="${BASE_URL}", api_key="${key}")
+
+resp = client.chat.completions.create(
+    model="auto",            # router picks Nano / Super / Ultra
+    user="customer-42",      # spend is tracked per customer
+    messages=[{"role": "user", "content": "Where is my order #1234?"}],
+)
+print(resp.choices[0].message.content)`;
+  const curl = `curl ${BASE_URL}/chat/completions \\
+  -H "Authorization: Bearer ${key}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"auto","user":"customer-42","messages":[{"role":"user","content":"Where is my order #1234?"}]}'`;
+  const docker = `# Run Waypoint in your own network (needs Docker with Compose)
+# 1. Download the zip with the button above, unzip it, and open a terminal in the waypoint folder.
+# 2. Start it:
+docker compose up --build -d
+
+# 3. On that machine, open http://localhost:8888/signup, sign up with your Token Factory key,
+#    and use the new router key with base_url="http://localhost:8888/v1".`;
+  return `
+  <div class="snip">
+    <div class="mb-2 flex items-center justify-between gap-2">
+      <div class="seg"><button class="on" data-snip="py">Python</button><button data-snip="curl">curl</button><button data-snip="docker">Docker</button></div>
+      <span class="snip-copy">${copyBtn(py)}</span>
+    </div>
+    <pre class="code" data-pane="py">${hlCode(py)}</pre>
+    <pre class="code hidden" data-pane="curl">${hlCode(curl)}</pre>
+    <pre class="code hidden" data-pane="docker">${hlCode(docker)}</pre>
+  </div>`;
+}
+fetch('/api/session').then(r => r.json()).then(d => {  // a self-hosted copy has nothing to download
+  if (d.self_hosted) document.head.insertAdjacentHTML('beforeend', '<style>[data-snip="docker"]{display:none}</style>');
+}).catch(() => {});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-snip]'); if (!b) return;
+  const root = b.closest('.snip');
+  $$('[data-snip]', root).forEach(x => x.classList.toggle('on', x === b));
+  $$('[data-pane]', root).forEach(p => p.classList.toggle('hidden', p.dataset.pane !== b.dataset.snip));
+  const pane = $(`[data-pane="${b.dataset.snip}"]`, root);
+  $('.snip-copy', root).innerHTML = b.dataset.snip === 'docker'
+    ? '<a href="/download/waypoint.zip" class="btn btn-primary btn-sm" download>Download (.zip)</a>'
+    : copyBtn(pane.textContent);
+});
+
+function emptyTraffic(withSnippet = true) {
+  return `<div class="empty"><svg viewBox="0 0 24 24" class="mb-1 h-6 w-6 opacity-60" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12h5l3-6 3 12 3-6h2"/></svg>
+    <div class="font-medium text-zinc-700 dark:text-zinc-300">No traffic yet</div>
+    <div>Send a request with the snippet${withSnippet ? ' below' : ' in Settings'} and it shows up here within seconds.</div></div>`;
+}
+
+// ---------- charts ----------
+function chartTheme() {
+  const d = isDark();
+  return { text: d ? '#a1a1aa' : '#52525b', grid: d ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', bg: d ? '#18181b' : '#ffffff' };
+}
+function baseOpts(extra = {}) {
+  const c = chartTheme();
+  if (window.Chart) { Chart.defaults.font.family = 'Inter, system-ui, sans-serif'; Chart.defaults.color = c.text; }
+  return Object.assign({
+    responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'rectRounded' } },
+      tooltip: { backgroundColor: c.bg, titleColor: c.text, bodyColor: c.text, borderColor: c.grid, borderWidth: 1, padding: 10 } },
+    scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } }, y: { grid: { color: c.grid }, beginAtZero: true } }
+  }, extra);
+}
+function setChart(key, canvas, cfg) {
+  if (!window.Chart || !canvas) return;
+  const ch = S.charts[key];
+  if (ch && ch.canvas === canvas) {
+    ch.data.labels = cfg.data.labels;
+    cfg.data.datasets.forEach((ds, i) => { if (ch.data.datasets[i]) ch.data.datasets[i].data = ds.data; });
+    ch.update('none'); return;
+  }
+  if (ch) ch.destroy();
+  S.charts[key] = new Chart(canvas, cfg);
+}
+
+// ---------- views ----------
+const Views = {};
+
+// Overview: "Inside the decisions" (GET /api/insights). Colors follow chat.html.
+const WC = { nano: '#76b900', nano_x3: '#a3e635', super: '#f59e0b', ultra: '#a78bfa', vision: '#f472b6', code: '#3b82f6', store: '#38bdf8' };
+const PLAN = [['ok', 'Resolved', '#76b900'], ['need_info', 'Asked the customer', '#38bdf8'], ['escalate', 'Handed to a person', '#a78bfa'], ['deny', 'Declined by your rules', '#ef4444']];
+const SUBFLOW = { return_size: 'Return: wrong size', return_color: 'Return: wrong color', return_stain: 'Return: stained item', recover_username: 'Forgot username', recover_password: 'Forgot password',
+  reset_2fa: 'Reset two-step login', refund_initiate: 'Refund: start one', refund_status: 'Refund: where is it', refund_update: 'Refund: change it', bad_price_competitor: 'Price: cheaper elsewhere',
+  bad_price_yesterday: 'Price: dropped after buying', promo_code_invalid: 'Promo code: not working', promo_code_out_of_date: 'Promo code: expired', status_delivery_time: 'Order: when will it arrive',
+  status_shipping_question: 'Order: shipping question', out_of_stock_general: 'Out of stock', out_of_stock_one_item: 'Out of stock: one item', mistimed_billing_already_returned: 'Billed after returning',
+  mistimed_billing_never_bought: 'Billed for something never bought', manage_change_address: 'Change address', manage_cancel: 'Cancel subscription' };
+const humanize = s => SUBFLOW[s] || (p => (p[0][0].toUpperCase() + p[0].slice(1)) + (p.length > 1 ? ': ' + p.slice(1).join(' ') : ''))(String(s || '?').split('_'));
+function insightsHtml(d) {
+  if (!num(d.pipeline_replies)) return `<div class="card"><div class="empty"><div class="font-medium text-zinc-700 dark:text-zinc-300">No pipeline traffic in this window yet.</div><div>Send a support conversation to a pipeline route (or open the chat demo) and its decisions show up here.</div></div></div>`;
+  const ent = o => Object.entries(o || {}).map(([k, v]) => [k, num(v) || 0]).filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]);
+  const tot = e => e.reduce((a, x) => a + x[1], 0);
+  const share = (e, k) => { const t = tot(e), f = e.find(x => x[0] === k); return t ? (f ? f[1] : 0) / t : null; };
+  const card = (title, sub, take, body) => `<div class="card min-w-0"><div class="card-h"><span class="card-t">${title}</span>${sub ? `<span class="truncate text-xs muted">${sub}</span>` : ''}</div><div class="p-4">${take ? `<p class="mb-4 text-sm">${take}</p>` : ''}${body}</div></div>`;
+  const none = '<div class="text-sm muted">Nothing recorded yet.</div>';
+  // horizontal bar list: rows of [label, n, color]
+  const bars = rows => { if (!rows.length) return none; const max = rows[0][1], t = tot(rows);
+    return `<div class="space-y-2">${rows.map(([l, n, c]) => `<div class="flex items-center gap-2 text-xs"><span class="w-28 shrink-0 truncate sm:w-40" title="${esc(l)}">${esc(l)}</span>
+      <div class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full" style="width:${n / max * 100}%;background:${c}"></div></div>
+      <span class="w-16 shrink-0 text-right tabular-nums">${int(n)} <span class="muted">${pctF(n / t)}</span></span></div>`).join('')}</div>`; };
+  // one stacked bar + legend: rows of [label, n, color]
+  const stack = (title, rows) => `<div class="mt-4"><div class="mb-1.5 text-[11px] font-medium uppercase tracking-wide muted">${title}</div>${rows.length ? `
+    <div class="flex h-2.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">${rows.map(([l, n, c]) => `<div style="width:${n / tot(rows) * 100}%;background:${c}" title="${esc(l)}: ${int(n)}"></div>`).join('')}</div>
+    <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">${rows.map(([l, n, c]) => `<span class="flex items-center gap-1.5"><i class="h-2 w-2 rounded-sm" style="background:${c}"></i>${esc(l)} <span class="tabular-nums muted">${pctF(n / tot(rows))}</span></span>`).join('')}</div>` : none}</div>`;
+  const tierName = { nano: 'Nano', super: 'Super', ultra: 'Ultra', vision: 'Vision', code: 'Rules', nano_x3: 'Nano ×3 drafts + merge', template: 'Ready-made reply (no model)' };
+  const color = k => (k === 'template' ? WC.code : WC[k]) || '#71717a';
+  const tierRows = (o, names = tierName) => ent(o).map(([k, n]) => [names[k] || k, n, color(k)]);
+  const out = [];
+
+  const sf = ent(d.subflows);
+  out.push(card('What customers ask', int(d.pipeline_replies) + ' conversations', sf.length ? `Most common: <b>${esc(humanize(sf[0][0]))}</b> (${pctF(share(sf, sf[0][0]))} of conversations).` : '',
+    bars(sf.slice(0, 8).map(([k, n]) => [humanize(k), n, WC.nano]))));
+
+  const mem = d.memory || {};
+  if (num(mem.used)) out.push(card('Memory of past cases', int(mem.used) + ' conversations',
+    `Before Nano decides what a customer wants, Waypoint finds the <b>3 most similar solved cases</b> and shows them to it. That's how Nano matches Super's accuracy at a fraction of the cost.`,
+    `<div class="grid grid-cols-3 gap-3 text-center">
+      <div><div class="text-2xl font-semibold tabular-nums">${int(mem.used)}</div><div class="text-xs muted">conversations helped by past cases</div></div>
+      <div><div class="text-2xl font-semibold tabular-nums">${pctF(mem.avg_top)}</div><div class="text-xs muted">average similarity of the closest case</div></div>
+      <div><div class="text-2xl font-semibold tabular-nums">${pctF(mem.agree / mem.used)}</div><div class="text-xs muted">where the closest case had the same request type</div></div>
+    </div>`));
+
+  const ps = ent(d.plan_status), miss = ent(d.missing_asked);
+  out.push(card('Outcome', '', ps.length ? `<b>${pctF(share(ps, 'ok'))}</b> were resolved in one reply. In <b>${pctF(share(ps, 'need_info'))}</b>, Waypoint asked the customer for a detail first (like an order number) instead of guessing, and carries on when they reply. ${pctF(share(ps, 'escalate'))} were handed to a person.` : '',
+    `<div class="relative h-56"><canvas id="cPlan"></canvas></div>
+    <div class="mt-4 text-[11px] font-medium uppercase tracking-wide muted">What it asked customers for</div>
+    <div class="mt-2 flex flex-wrap gap-1.5">${miss.length ? miss.slice(0, 10).map(([k, n]) => `<span class="badge b-gray">${esc(k.replace(/_/g, ' ').split('|').join(' or '))} <span class="tabular-nums opacity-70">${int(n)}</span></span>`).join('') : '<span class="text-sm muted">None: every request had what it needed.</span>'}</div>`));
+
+  const ct = ent(d.calls_by_tier).filter(([k]) => k !== 'vision');  // photo checks aren't routing choices
+  out.push(card('Who did the work', int(tot(ct)) + ' model calls', ct.length ? `Nano made <b>${pctF(share(ct, 'nano'))}</b> of all model calls; Ultra stepped in on only ${pctF(share(ct, 'ultra'))}.` : '',
+    bars(['nano', 'super', 'ultra'].map(k => [tierName[k], num((d.calls_by_tier || {})[k]) || 0, WC[k]]).filter(r => r[1] > 0)) +
+    stack('Understood the request', tierRows(d.intent_by)) +
+    stack('Wrote the reply', tierRows(d.writer))));
+
+  const fs = ent(d.field_sources), fsName = { code: 'Exact match', store: 'Store record', nano: 'Nano', super: 'Super', ultra: 'Ultra' };
+  out.push(card('Details found by', int(tot(fs)) + ' details', fs.length ? `<b>${pctF((share(fs, 'code') || 0) + (share(fs, 'store') || 0))}</b> of details (order numbers, emails, names) came from exact matching or the store record, with no model needed.` : '',
+    bars(fs.map(([k, n]) => [fsName[k] || k, n, color(k)]))));
+
+  const tl = Object.entries(d.tools || {}).filter(([, v]) => v && num(v.calls)).sort((a, b) => b[1].calls - a[1].calls);
+  out.push(card('Store actions', int(tl.reduce((a, [, v]) => a + v.calls, 0)) + ' calls', tl.length ? `<b>${pctF(d.tool_success)}</b> of store actions (look up an order, start a return, ...) succeeded.` : '',
+    tl.length ? `<div class="overflow-x-auto"><table class="tbl"><thead><tr><th class="th">Action</th><th class="th text-right">Calls</th><th class="th text-right">OK</th></tr></thead><tbody>
+      ${tl.map(([k, v]) => `<tr><td class="td font-mono text-xs">${esc(k)}</td><td class="td text-right tabular-nums">${int(v.calls)}</td><td class="td text-right tabular-nums ${v.ok < v.calls ? '' : 'text-accent-dim dark:text-accent'}">${pctF(v.ok / v.calls)}</td></tr>`).join('')}
+      </tbody></table></div>` : none));
+
+  const tt = d.turn_types || {}, vis = d.vision || {}, lk = d.lookups || {};
+  const photos = Object.entries(vis).filter(([k]) => k !== 'off').reduce((a, [, v]) => a + (num(v) || 0), 0);
+  const tile = (l, v, s) => `<div class="card min-w-0 p-4"><div class="truncate text-[11px] font-medium uppercase tracking-wide muted">${l}</div><div class="mt-1 truncate text-2xl font-semibold tabular-nums">${v}</div><div class="mt-0.5 truncate text-xs muted">${s}</div></div>`;
+  const tiles = [
+    tile('Safety checks passed', pctF(d.safety_pass), 'replies checked before sending'),
+    tile('Understanding confidence', d.intent_conf_avg == null ? '—' : Number(d.intent_conf_avg).toFixed(2), 'average, 0 to 1'),
+    tile('Topic switches', int((num(tt.new_request) || 0) + (num(tt.both) || 0)), 'customer changed subject mid-chat'),
+    tile('Open tasks followed up', int(d.open_tasks), 'picked up from earlier turns'),
+    tile('Photos analysed', int(photos), int(vis.off || 0) + ' with photo analysis off'),
+    tile('Web lookups', `${int(lk.found)}<span class="text-base muted"> / ${int(lk.n)}</span>`, 'Tavily searches that found an answer')];
+  return `<div class="grid gap-4 lg:grid-cols-2">${out.join('')}</div><div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">${tiles.join('')}</div>`;
+}
+
+Views.overview = function (el, gen) {
+  const segs = [[1, '1h'], [24, '24h'], [168, '7d']].map(([h, l]) => `<button data-h="${h}" class="${h === S.hours ? 'on' : ''}">${l}</button>`).join('');
+  el.innerHTML = head('Overview', 'How your traffic was routed and what it cost.',
+    `<span class="flex items-center gap-1.5 text-xs muted"><span class="pulse h-1.5 w-1.5 rounded-full bg-accent"></span>auto-refresh 10s</span><div class="seg" id="hrs">${segs}</div>`) +
+    `<div id="kpis" class="grid grid-cols-2 gap-3 lg:grid-cols-4">${Array(8).fill('<div class="card h-[92px] animate-pulse"></div>').join('')}</div>
+     <div id="ovBody" class="mt-4"></div>
+     <div class="mb-3 mt-8 min-w-0"><h2 class="text-base font-semibold tracking-tight">Inside the decisions</h2><p class="mt-1 text-sm muted">What the support pipeline actually did with each conversation: what was asked, how it ended, and which model or rule did each step.</p></div>
+     <div id="insBox"><div class="card h-40 animate-pulse"></div></div>`;
+  $('#hrs').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.hours = Number(b.dataset.h); store.set('hours', String(S.hours));
+    $$('#hrs button').forEach(x => x.classList.toggle('on', x === b)); refresh();
+  });
+  let shape = null, insHtml = '';
+  async function loadIns(silent) {
+    let d;
+    try { d = await api('/api/insights?hours=' + S.hours); } catch (e) { if (!silent) toast(e.message); return; }
+    if (gen !== S.gen) return;
+    const html = insightsHtml(d || {});
+    if (html !== insHtml) { insHtml = html; $('#insBox').innerHTML = html; }  // unchanged → keep DOM, chart just updates
+    const ps = (d && d.plan_status) || {};
+    if ($('#cPlan')) setChart('plan', $('#cPlan'), { type: 'doughnut', data: { labels: PLAN.map(p => p[1]), datasets: [{ data: PLAN.map(p => num(ps[p[0]]) || 0), backgroundColor: PLAN.map(p => p[2]), borderColor: chartTheme().bg, borderWidth: 2 }] },
+      options: Object.assign(baseOpts(), { cutout: '68%', scales: {}, interaction: {}, plugins: Object.assign(baseOpts().plugins, { legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } } }) }) });
+  }
+  async function refresh(silent) {
+    loadIns(silent);
+    let d;
+    try { d = await api('/api/overview?hours=' + S.hours); } catch (e) { if (!silent) toast(e.message); return; }
+    if (gen !== S.gen) return;
+    const mix = d.tier_mix || {}; const mixSum = ['nano', 'super', 'ultra'].reduce((a, k) => a + (num(mix[k]) || 0), 0);
+    const share = k => mixSum ? (num(mix[k]) || 0) / mixSum : null;
+    const kpi = (label, value, sub = '', accent = false) => `
+      <div class="card min-w-0 p-4"><div class="text-[11px] font-medium uppercase tracking-wide muted">${label}</div>
+      <div class="mt-1 truncate text-2xl font-semibold tabular-nums ${accent ? 'text-accent-dim dark:text-accent' : ''}">${value}</div>
+      <div class="mt-0.5 truncate text-xs muted">${sub}</div></div>`;
+    const sp = num(d.savings_pct);
+    $('#kpis').innerHTML = [
+      kpi('Requests', int(d.requests), 'last ' + (S.hours === 168 ? '7 days' : S.hours + 'h')),
+      kpi('Cost', money(d.cost_usd), d.requests ? money((d.cost_usd || 0) / d.requests) + ' / request' : ''),
+      kpi('Savings vs Ultra-only', sp == null ? '—' : pctP(sp, 1), d.ultra_cost_usd != null ? 'Ultra-only: ' + money(d.ultra_cost_usd) : '', sp > 0),
+      kpi('Answered by Nano', share('nano') == null ? '—' : pctF(share('nano'), 1), 'no escalation needed'),
+      kpi('Escalation rate', pctF(d.escalation_rate, 1), 'Nano unsure → Super/Ultra'),
+      kpi('p50 latency', ms(d.p50_latency_ms), 'end-to-end'),
+      kpi('Avg confidence', d.avg_confidence == null ? '—' : Number(d.avg_confidence).toFixed(2), 'Nano logprob score'),
+      kpi('Fallbacks / errors', `${int(d.fallbacks)} <span class="text-base muted">/</span> <span class="${d.errors ? 'text-red-500' : ''}">${int(d.errors)}</span>`, 'fallback = 429 absorbed')
+    ].join('');
+    const body = $('#ovBody');
+    if (!d.requests) {
+      shape = 'empty'; ['mix', 'donut', 'cost'].forEach(k => { if (S.charts[k]) { S.charts[k].destroy(); delete S.charts[k]; } });
+      body.innerHTML = `<div class="card">${emptyTraffic()}<div class="px-4 pb-5 md:px-6">${snippets(store.get('rk'))}</div></div>`;
+      return;
+    }
+    if (shape !== 'charts') {
+      shape = 'charts';
+      body.innerHTML = `
+        <div class="grid gap-4 lg:grid-cols-3">
+          <div class="card min-w-0 lg:col-span-2"><div class="card-h"><span class="card-t">Tier mix over time</span><span class="text-xs muted">requests / hour</span></div><div class="relative h-64 p-3"><canvas id="cMix"></canvas></div></div>
+          <div class="card min-w-0"><div class="card-h"><span class="card-t">Who answered</span></div><div class="relative h-64 p-3"><canvas id="cDonut"></canvas></div></div>
+          <div class="card min-w-0 lg:col-span-3"><div class="card-h"><span class="card-t">Cost over time</span><span class="text-xs muted">USD / hour</span></div><div class="relative h-56 p-3"><canvas id="cCost"></canvas></div></div>
+        </div>`;
+    }
+    const ts = Array.isArray(d.timeseries) ? d.timeseries : [];
+    const labels = ts.map(p => { const dt = toDate(p.t); if (!dt) return ''; return S.hours > 24 ? dt.toLocaleDateString(undefined, { weekday: 'short' }) + ' ' + dt.getHours() + 'h' : dt.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); });
+    const series = k => ts.map(p => num(p[k]) || 0);
+    setChart('mix', $('#cMix'), { type: 'bar', data: { labels, datasets: ['nano', 'super', 'ultra'].map(k => ({ label: k[0].toUpperCase() + k.slice(1), data: series(k), backgroundColor: TIER[k], borderRadius: 2, maxBarThickness: 28 })) },
+      options: baseOpts({ scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } }, y: { stacked: true, beginAtZero: true, grid: { color: chartTheme().grid }, ticks: { precision: 0 } } } }) });
+    setChart('donut', $('#cDonut'), { type: 'doughnut', data: { labels: ['Nano', 'Super', 'Ultra'], datasets: [{ data: ['nano', 'super', 'ultra'].map(k => num(mix[k]) || 0), backgroundColor: [TIER.nano, TIER.super, TIER.ultra], borderColor: chartTheme().bg, borderWidth: 2 }] },
+      options: Object.assign(baseOpts(), { cutout: '68%', scales: {}, interaction: {}, plugins: Object.assign(baseOpts().plugins, { legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
+        tooltip: Object.assign(baseOpts().plugins.tooltip, { callbacks: { label: c => ` ${c.label}: ${pctF(mixSum ? c.raw / mixSum : 0, 1)}` } }) }) }) });
+    setChart('cost', $('#cCost'), { type: 'line', data: { labels, datasets: [{ label: 'Cost', data: series('cost_usd'), borderColor: '#76b900', backgroundColor: 'rgba(118,185,0,.12)', fill: true, tension: .3, pointRadius: 0, borderWidth: 2 }] },
+      options: baseOpts({ plugins: Object.assign(baseOpts().plugins, { legend: { display: false }, tooltip: Object.assign(baseOpts().plugins.tooltip, { callbacks: { label: c => ' ' + money(c.raw) } }) }),
+        scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 16 } }, y: { beginAtZero: true, grid: { color: chartTheme().grid }, ticks: { callback: v => money(v) } } } }) });
+  }
+  refresh(); autoRefresh(refresh);
+};
+
+// Routes
+const FIRST_RUN = `<div class="card"><div class="empty"><div class="text-base font-semibold text-zinc-800 dark:text-zinc-200">No connections yet</div>
+  <div class="max-w-md">A connection is one job your assistant does. Add a few real conversations and we'll pick the cheapest Nemotron setup that answers as well as Ultra.</div>
+  <a href="/onboarding" class="btn btn-primary mt-3">Set up your first connection</a></div></div>`;
+function policyBadge(r) {
+  const p = String(r.policy || '').toLowerCase();
+  if (p === 'cascade') return `<span class="badge b-green">cascade t=${num(r.threshold) == null ? '?' : Number(r.threshold).toFixed(2)} → ${esc(r.escalate_to || 'super')}</span>`;
+  if (p === 'direct') return `<span class="badge ${'tier-' + esc(String(r.tier || '').toLowerCase())}">direct ${esc(r.tier || '?')}</span>`;
+  return `<span class="badge b-gray">${p ? esc(p) : 'uncalibrated'}</span>`;
+}
+function highlightLint(text, lint) {
+  text = String(text || '');
+  const spans = [];
+  (lint || []).forEach(w => {
+    const m = String(w.match || ''); if (!m) return;
+    let p = num(w.pos);
+    if (p == null || text.substr(p, m.length) !== m) p = text.indexOf(m);
+    if (p >= 0) spans.push([p, p + m.length, w.message || w.kind]);
+  });
+  spans.sort((a, b) => a[0] - b[0]);
+  let out = '', i = 0;
+  spans.forEach(([a, b, msg]) => { if (a < i) return; out += esc(text.slice(i, a)) + `<mark class="lint" title="${esc(msg)}">${esc(text.slice(a, b))}</mark>`; i = b; });
+  return out + esc(text.slice(i));
+}
+function accBars(acc) {
+  if (!acc) return '';
+  return ['nano', 'super', 'ultra'].map(k => {
+    const v = num(acc[k]);
+    return `<div class="flex items-center gap-2 text-xs"><span class="w-10 muted">${k}</span>
+      <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full" style="width:${v == null ? 0 : Math.max(0, Math.min(100, v * 100))}%;background:${TIER[k]}"></div></div>
+      <span class="w-10 text-right tabular-nums">${pctF(v)}</span></div>`;
+  }).join('');
+}
+
+Views.routes = function (el, gen) {
+  el.innerHTML = head('Routes', 'Each connection is a task with its own system prompt and calibrated cascade policy. Call it with <code class="font-mono text-xs">model="connection-name"</code>.',
+    '<span id="routeNew"></span>', false) +
+    `<div id="routeList" class="space-y-4"><div class="card h-32 animate-pulse"></div></div>`;
+  loadRoutes(gen);
+};
+async function loadRoutes(gen) {
+  let list;
+  try { list = await api('/api/routes'); } catch (e) { toast(e.message); return; }
+  if (gen !== S.gen) return;
+  const box = $('#routeList');
+  if (!list || !list.length) {
+    box.innerHTML = FIRST_RUN;
+    return;
+  }
+  $('#routeNew').innerHTML = '<a href="/onboarding" class="btn btn-primary">New connection</a>';
+  S.routes = Object.fromEntries(list.map(r => [r.name, r]));
+  box.innerHTML = list.map(r => {
+    const cal = r.calibration || null, cache = r.cache || null, lint = Array.isArray(r.lint) ? r.lint : [];
+    return `
+    <div class="card min-w-0">
+      <div class="flex flex-wrap items-start justify-between gap-3 p-4">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2"><span class="font-mono text-sm font-semibold">${esc(r.name)}</span>${policyBadge(r)}
+            ${r.first_n ? `<span class="badge b-gray">first ${esc(r.first_n)} tokens</span>` : ''}
+            ${lint.length ? `<span class="badge b-amber">${lint.length} cache warning${lint.length > 1 ? 's' : ''}</span>` : ''}</div>
+          ${r.description ? `<p class="mt-1.5 line-clamp-2 text-sm muted">${esc(r.description)}</p>` : ''}
+          ${r.policy === 'pipeline' ? `<label class="mt-2 inline-flex cursor-pointer items-center gap-2 text-sm">
+            <input type="checkbox" id="vision-${esc(r.name)}" ${r.vision === 0 || r.vision === false ? '' : 'checked'}
+              onchange="setVision(${esc(JSON.stringify(r.name))}, this)">
+            <span>Photo analysis <span class="muted">(vision model runs only when a customer attaches a photo)</span></span></label>` : ''}
+        </div>
+        <div class="flex shrink-0 gap-2"><button class="btn btn-sm" data-edit="${esc(r.name)}">Edit</button>${copyBtn(r.name, 'Copy name')}</div>
+      </div>
+      <div class="route-edit hidden border-t border-zinc-200 p-4 dark:border-zinc-800" data-edit-box="${esc(r.name)}"></div>
+      <div class="grid gap-4 border-t border-zinc-200 p-4 dark:border-zinc-800 sm:grid-cols-3">
+        <div><div class="label">Nano coverage</div>
+          <div class="text-2xl font-semibold tabular-nums">${cal ? pctF(cal.coverage) : '—'}</div>
+          <div class="text-xs muted">${cal ? `of ${int(cal.n)} examples handled by Nano alone` : 'not calibrated'}</div></div>
+        <div><div class="label">Accuracy on examples</div><div class="space-y-1.5">${cal && cal.accuracies ? accBars(cal.accuracies) : '<span class="text-sm muted">—</span>'}</div></div>
+        <div><div class="label">Prompt cache hit rate</div>
+          <div class="text-2xl font-semibold tabular-nums">${cache && cache.requests ? pctF(cache.hit_rate, 1) : '—'}</div>
+          <div class="text-xs muted">${cache && cache.requests ? `${int(cache.cached_tokens)} / ${int(cache.prompt_tokens)} prompt tokens cached` : 'no Super/Ultra traffic yet'}</div></div>
+      </div>
+      ${lint.length ? `<div class="space-y-1.5 border-t border-zinc-200 p-4 dark:border-zinc-800">
+        ${lint.map(w => `<div class="flex flex-wrap items-baseline gap-2 text-sm"><span class="badge b-amber">${esc(w.kind)}</span><code class="rounded bg-amber-100 px-1 font-mono text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">${esc(w.match)}</code><span class="muted">${esc(w.message)}</span></div>`).join('')}
+        <p class="pt-1 text-xs muted">Move changing content to the end of the prompt (or into the user message) so the fixed prefix can be cached.</p></div>` : ''}
+      ${r.system_prompt ? `<details class="border-t border-zinc-200 dark:border-zinc-800"><summary class="cursor-pointer select-none px-4 py-2.5 text-xs font-medium muted hover:text-zinc-900 dark:hover:text-zinc-100">System prompt</summary>
+        <pre class="code mx-4 mb-4 max-h-72 whitespace-pre-wrap break-words">${highlightLint(r.system_prompt, lint)}</pre></details>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// Edit a connection: PUT /api/routes/{name} (no re-tune) or POST /api/routes (re-tune with new examples)
+const toJsonl = ex => (ex || []).map(e => JSON.stringify(e.expected == null ? { input: e.input } : { input: e.input, expected: e.expected })).join('\n');
+function parseJsonl(text) {
+  const rows = [];
+  for (const [i, line] of text.split('\n').entries()) {
+    if (!line.trim()) continue;
+    let o; try { o = JSON.parse(line); } catch (e) { throw new Error(`Line ${i + 1} is not valid JSON.`); }
+    if (!o || typeof o.input !== 'string' || !o.input.trim()) throw new Error(`Line ${i + 1} needs an "input" text.`);
+    rows.push({ input: o.input, expected: typeof o.expected === 'string' ? o.expected : null });
+  }
+  return rows;
+}
+function editForm(r) {
+  const pipe = r.policy === 'pipeline';
+  const field = (label, html, help) => `<div><label class="label">${label}</label>${html}${help ? `<p class="mt-1 text-xs muted">${help}</p>` : ''}</div>`;
+  return `<div class="grid gap-4">
+    ${field('Task description', `<textarea class="input" rows="3" maxlength="4000" data-f="description">${esc(r.description || '')}</textarea>`)}
+    ${pipe ? `<div class="grid gap-4 sm:grid-cols-2">
+      ${field('Nano confidence cut-off', `<input class="input" type="number" min="0.5" max="0.99" step="0.01" data-f="threshold" value="${esc(num(r.threshold) == null ? '' : Number(r.threshold).toFixed(2))}">`, 'Below this, a bigger model double-checks. Higher means more checks and more cost.')}
+      ${field('Store API URL', `<input class="input" type="url" data-f="store_url" placeholder="https://your-store.example" value="${esc(r.store_url || '')}">`, 'Where order and customer records are looked up.')}
+    </div>
+    <p class="text-xs muted">This connection runs the support pipeline, which writes its own prompts from your rules and uploads. Change those on <a class="underline" href="/teach">Teach your router</a>.</p>`
+    : `${field('System prompt', `<textarea class="input font-mono text-xs" rows="8" maxlength="20000" data-f="system_prompt">${esc(r.system_prompt || '')}</textarea>`)}
+    ${field('Reference conversations <span class="muted">(one JSON object per line)</span>', `<textarea class="input font-mono text-xs" rows="8" data-f="examples" placeholder='{"input": "Where is my order?", "expected": "Thanks for asking..."}'>${esc(toJsonl(r.examples))}</textarea>`,
+      r.examples_partial ? 'Only the first 120 characters of each conversation were kept for this connection. Paste the full ones before re-tuning.' : 'Changing these needs a re-tune, which tests them on Nano, Super and Ultra again (uses your Token Factory key).')}`}
+    <p class="hidden text-sm text-red-600 dark:text-red-400" data-err role="alert"></p>
+    <div class="flex flex-wrap items-center gap-2">
+      <button class="btn btn-primary btn-sm" data-save="${esc(r.name)}">Save</button>
+      ${pipe ? '' : `<button class="btn btn-sm" data-retune="${esc(r.name)}">Save and re-tune</button>`}
+      <button class="btn btn-sm" data-cancel="${esc(r.name)}">Cancel</button>
+      <span class="text-xs muted" data-status></span>
+    </div></div>`;
+}
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-edit],[data-save],[data-retune],[data-cancel]'); if (!t) return;
+  const name = t.dataset.edit || t.dataset.save || t.dataset.retune || t.dataset.cancel, r = (S.routes || {})[name];
+  const box = [...$$('[data-edit-box]')].find(b => b.dataset.editBox === name); if (!r || !box) return;
+  if (t.dataset.edit !== undefined || t.dataset.cancel !== undefined) {
+    const open = t.dataset.edit !== undefined && box.classList.contains('hidden');
+    box.innerHTML = open ? editForm(r) : ''; box.classList.toggle('hidden', !open); return;
+  }
+  const val = f => { const el = $(`[data-f="${f}"]`, box); return el ? el.value : undefined; };
+  const err = m => { const p = $('[data-err]', box); p.textContent = m || ''; p.classList.toggle('hidden', !m); };
+  const status = m => { $('[data-status]', box).textContent = m || ''; };
+  err('');
+  const body = { description: val('description') };
+  if (r.policy === 'pipeline') { body.threshold = val('threshold'); body.store_url = val('store_url'); }
+  else body.system_prompt = val('system_prompt');
+  let examples = null;
+  if (r.policy !== 'pipeline') {
+    try { examples = parseJsonl(val('examples')); } catch (x) { return err(x.message); }
+    const changed = JSON.stringify(examples) !== JSON.stringify((r.examples || []).map(e => ({ input: e.input, expected: e.expected == null ? null : e.expected })));
+    if (t.dataset.save !== undefined && changed) return err('Your reference conversations changed. Use "Save and re-tune" so the results match them.');
+  }
+  $$('button', box).forEach(b => { b.disabled = true; });
+  try {
+    if (t.dataset.save !== undefined) {
+      await api('/api/routes/' + encodeURIComponent(name), { method: 'PUT', body });
+      toast(`Saved ${name}`, 'ok'); loadRoutes(S.gen); return;
+    }
+    if (!examples.length) throw new Error('Add at least one reference conversation.');
+    const { job_id } = await api('/api/routes', { method: 'POST', body: { name, description: body.description, system_prompt: body.system_prompt || null, examples: examples.slice(0, 50), check: 'judge' } });
+    status('Re-tuning: testing your examples on Nano, Super and Ultra…');
+    for (;;) {
+      await sleep(3000);
+      const j = await api('/api/jobs/' + job_id);
+      if (j.status === 'done') { toast(`Re-tuned ${name}`, 'ok'); loadRoutes(S.gen); return; }
+      if (j.status === 'error' || (j.result && j.result.error)) throw new Error((j.result && j.result.error) || 'Re-tune failed');
+    }
+  } catch (x) { err(x.message); $$('button', box).forEach(b => { b.disabled = false; }); status(''); }
+});
+
+// Customers
+Views.customers = function (el, gen) {
+  el.innerHTML = head('Customers', 'Spend grouped by the OpenAI <code class="font-mono text-xs">user</code> field. At 90% of budget the router downgrades that customer to Nano.',
+    '<button id="custRefresh" class="btn">Refresh</button>') + `<div id="custBox" class="card min-w-0"><div class="h-40 animate-pulse"></div></div>`;
+  $('#custRefresh').addEventListener('click', load);
+  async function load() {
+    let list;
+    try { list = await api('/api/customers'); } catch (e) { toast(e.message); return; }
+    if (gen !== S.gen) return;
+    const box = $('#custBox');
+    if (!list || !list.length) { box.innerHTML = emptyTraffic(false) + '<p class="-mt-6 pb-8 text-center text-xs muted">Pass <code class="font-mono">user="customer-42"</code> on each request to see it here.</p>'; return; }
+    list = list.slice().sort((a, b) => (b.cost_usd || 0) - (a.cost_usd || 0));
+    box.innerHTML = `<div class="overflow-x-auto"><table class="tbl"><thead><tr><th class="th">Customer</th><th class="th text-right">Requests</th><th class="th text-right">Spend</th><th class="th">Budget (USD)</th><th class="th min-w-[10rem]">Budget used</th></tr></thead><tbody>
+      ${list.map(c => {
+        const b = num(c.budget_usd), cost = num(c.cost_usd) || 0;
+        let p = b ? cost / b * 100 : (num(c.pct) != null ? Number(c.pct) : null);
+        const col = p == null ? '' : p >= 90 ? 'bg-red-500' : p >= 75 ? 'bg-amber-500' : 'bg-accent';
+        return `<tr><td class="td font-mono text-xs">${esc(c.user || '(no user)')}</td><td class="td text-right tabular-nums">${int(c.requests)}</td><td class="td text-right tabular-nums">${money(cost)}</td>
+          <td class="td"><input class="input budget w-28 py-1 tabular-nums" type="number" min="0" step="0.01" inputmode="decimal" placeholder="none" data-user="${esc(c.user)}" data-orig="${b == null ? '' : b}" value="${b == null ? '' : b}"></td>
+          <td class="td">${p == null ? '<span class="text-xs muted">no budget</span>' : `<div class="flex items-center gap-2"><div class="h-1.5 w-28 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full ${col}" style="width:${Math.min(100, p)}%"></div></div><span class="text-xs tabular-nums ${p >= 90 ? 'text-red-500 font-medium' : 'muted'}">${p.toFixed(0)}%${p >= 90 ? ' · on Nano' : ''}</span></div>`}</td></tr>`;
+      }).join('')}</tbody></table></div>`;
+    $$('.budget', box).forEach(inp => {
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { inp.value = inp.dataset.orig; inp.blur(); } });
+      inp.addEventListener('blur', async () => {
+        const v = inp.value.trim(); if (v === inp.dataset.orig) return;
+        const budget = v === '' ? null : Number(v);
+        if (budget != null && (isNaN(budget) || budget < 0)) { toast('Budget must be a positive number'); inp.value = inp.dataset.orig; return; }
+        try { await api('/api/customers/' + encodeURIComponent(inp.dataset.user), { method: 'PUT', body: { budget_usd: budget } }); inp.dataset.orig = v; toast('Budget saved for ' + inp.dataset.user, 'ok'); load(); }
+        catch (e) { toast(e.message); inp.value = inp.dataset.orig; }
+      });
+    });
+  }
+  load();
+};
+
+// Requests
+Views.requests = function (el, gen) {
+  el.innerHTML = head('Requests', 'Latest 50 requests and which tier answered.',
+    '<span class="flex items-center gap-1.5 text-xs muted"><span class="pulse h-1.5 w-1.5 rounded-full bg-accent"></span>live · 10s</span>') +
+    `<div id="reqBox" class="card min-w-0"><div class="h-40 animate-pulse"></div></div>`;
+  async function refresh(silent) {
+    let list;
+    try { list = await api('/api/requests?limit=50'); } catch (e) { if (!silent) toast(e.message); return; }
+    if (gen !== S.gen) return;
+    const box = $('#reqBox');
+    if (!list || !list.length) { box.innerHTML = emptyTraffic(false); return; }
+    const icon = (on, title, path, cls) => on ? `<span title="${title}" class="${cls}"><svg viewBox="0 0 24 24" class="inline h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg></span>` : '';
+    box.innerHTML = `<div class="overflow-x-auto"><table class="tbl"><thead><tr>
+      <th class="th">Time</th><th class="th">Route</th><th class="th">User</th><th class="th">Tier</th><th class="th hidden lg:table-cell">Model</th><th class="th">Confidence</th><th class="th"></th><th class="th text-right">Latency</th><th class="th text-right">Cost</th><th class="th">Status</th></tr></thead><tbody>
+      ${list.map(r => {
+        const c = num(r.confidence), st = r.status, bad = (typeof st === 'number' && st >= 400) || /err|fail/i.test(String(st));
+        const dt = toDate(r.ts);
+        return `<tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+          <td class="td text-xs muted" title="${dt ? esc(dt.toLocaleString()) : ''}">${ago(r.ts)}</td>
+          <td class="td font-mono text-xs">${esc(r.route || 'auto')}</td>
+          <td class="td max-w-[9rem] truncate font-mono text-xs" title="${esc(r.user)}">${esc(r.user || '—')}</td>
+          <td class="td">${tierBadge(r.tier)}</td>
+          <td class="td hidden max-w-[14rem] truncate font-mono text-xs muted lg:table-cell" title="${esc(r.model)}">${esc(r.model || '—')}</td>
+          <td class="td">${c == null ? '<span class="muted">—</span>' : `<div class="flex items-center gap-2"><div class="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full" style="width:${Math.max(0, Math.min(1, c)) * 100}%;background:${c >= 0.8 ? TIER.nano : c >= 0.6 ? '#f59e0b' : '#ef4444'}"></div></div><span class="text-xs tabular-nums">${c.toFixed(2)}</span></div>`}</td>
+          <td class="td"><span class="inline-flex gap-1.5">${icon(r.escalated, 'Escalated: Nano was not confident', '<path d="M12 19V5M5 12l7-7 7 7"/>', 'text-sky-500')}${icon(r.fallback, 'Fallback model used (rate limit / error)', '<path d="M4 7h11a5 5 0 0 1 0 10H8M8 13l-4 4 4 4"/>', 'text-amber-500')}${icon(r.stream, 'Streamed', '<path d="M3 12h4l3 6 4-12 3 6h4"/>', 'text-zinc-400')}</span></td>
+          <td class="td text-right tabular-nums">${ms(r.latency_ms)}</td>
+          <td class="td text-right tabular-nums">${money(r.cost_usd)}</td>
+          <td class="td">${bad ? `<span class="badge b-red">${esc(st)}</span>` : `<span class="text-xs muted">${esc(st == null ? '—' : st)}</span>`}</td></tr>`;
+      }).join('')}</tbody></table></div>
+      <div class="flex flex-wrap gap-4 border-t border-zinc-200 px-4 py-2.5 text-xs muted dark:border-zinc-800">
+        <span class="inline-flex items-center gap-1"><span class="text-sky-500">↑</span> escalated</span><span class="inline-flex items-center gap-1"><span class="text-amber-500">↩</span> fallback model</span><span>confidence = Nano's logprob score on the first tokens</span></div>`;
+  }
+  refresh(); autoRefresh(refresh);
+};
+
+// Limits
+function gauge(label, v, sub) {
+  v = num(v);
+  const val = v == null ? 0 : Math.max(0, Math.min(100, v));
+  const col = v == null ? '#71717a' : val >= 95 ? '#ef4444' : (val >= 50 && val <= 80) ? '#76b900' : '#f59e0b';
+  const arc = 'M 12 64 A 52 52 0 0 1 116 64';
+  return `<div class="card min-w-0 p-4"><div class="text-[11px] font-medium uppercase tracking-wide muted">${label}</div>
+    <svg viewBox="0 0 128 74" class="mx-auto mt-2 w-full max-w-[220px]">
+      <path d="${arc}" pathLength="100" fill="none" stroke="currentColor" class="text-zinc-200 dark:text-zinc-800" stroke-width="12"/>
+      <path d="${arc}" pathLength="100" fill="none" stroke="#76b900" stroke-opacity=".22" stroke-width="12" stroke-dasharray="30 100" stroke-dashoffset="-50"/>
+      <path d="${arc}" pathLength="100" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${val} 100"/>
+      <text x="64" y="58" text-anchor="middle" class="fill-current" style="font:600 18px Inter,sans-serif">${v == null ? '—' : val.toFixed(0) + '%'}</text>
+      <text x="12" y="73" text-anchor="middle" class="fill-zinc-400" style="font:8px Inter">0</text><text x="116" y="73" text-anchor="middle" class="fill-zinc-400" style="font:8px Inter">100</text>
+    </svg>
+    <div class="mt-1 text-center text-xs muted">${sub}</div></div>`;
+}
+Views.limits = function (el, gen) {
+  el.innerHTML = head('Rate limits', 'Token Factory grows your limit ×1.2 when usage stays ≥80% over a 15-minute window and shrinks it ÷1.5 at ≤50%. The router paces traffic to stay in the shaded 50–80% growth band.',
+    '<span class="flex items-center gap-1.5 text-xs muted"><span class="pulse h-1.5 w-1.5 rounded-full bg-accent"></span>10s</span>') + `<div id="limBox"><div class="card h-40 animate-pulse"></div></div>`;
+  async function refresh(silent) {
+    let d;
+    try { d = await api('/api/limits'); } catch (e) { if (!silent) toast(e.message); return; }
+    if (gen !== S.gen) return;
+    d = d || {};
+    const dyn = d.dynamic || {}, lim = d.limits || {}, rem = d.remaining || {}, cnt = d.counts || {};
+    const keys = Array.from(new Set(Object.keys(lim).concat(Object.keys(rem)))).filter(k => num(lim[k]) != null || num(rem[k]) != null);
+    const human = k => k.replace(/^x-ratelimit-/, '').replace(/[_-]+/g, ' ');
+    const bandNote = v => { v = num(v); return v == null ? 'no data yet' : v > 80 ? 'above band — limit will grow' : v >= 50 ? 'in growth band' : 'below band — limit may shrink'; };
+    const counts = [['requests', 'Requests'], ['retries', 'Retries'], ['fallbacks', 'Fallbacks'], ['rate_limited', '429s absorbed'], ['errors', 'Errors']];
+    document.getElementById('limBox').innerHTML = `
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        ${gauge('Request usage', dyn.usage_requests_pct, bandNote(dyn.usage_requests_pct))}
+        ${gauge('Token usage', dyn.usage_tokens_pct, bandNote(dyn.usage_tokens_pct))}
+        <div class="card p-4"><div class="text-[11px] font-medium uppercase tracking-wide muted">Dynamic scale</div><div class="mt-2 text-3xl font-semibold tabular-nums">${num(dyn.scale_requests) == null ? '—' : '×' + Number(dyn.scale_requests).toFixed(2)}</div><div class="mt-1 text-xs muted">current multiplier on your request limit</div></div>
+        <div class="card p-4"><div class="text-[11px] font-medium uppercase tracking-wide muted">Window resets in</div><div class="mt-2 text-3xl font-semibold tabular-nums">${dur(dyn.period_remaining_s)}</div><div class="mt-1 text-xs muted">last 429: ${d.last_429_ts ? ago(d.last_429_ts) : 'never'}</div></div>
+      </div>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="card min-w-0"><div class="card-h"><span class="card-t">Remaining this period</span></div>
+          ${keys.length ? `<div class="space-y-3 p-4">${keys.map(k => { const L = num(lim[k]), R = num(rem[k]); const p = L && R != null ? R / L * 100 : null;
+            return `<div><div class="mb-1 flex justify-between gap-2 text-sm"><span class="capitalize">${esc(human(k))}</span><span class="tabular-nums muted">${int(R)} / ${int(L)}</span></div>
+              <div class="h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"><div class="h-full rounded-full ${p != null && p < 10 ? 'bg-red-500' : 'bg-accent'}" style="width:${p == null ? 0 : Math.min(100, p)}%"></div></div></div>`; }).join('')}</div>`
+            : '<div class="empty">No rate-limit headers seen yet — they appear after the first request.</div>'}
+        </div>
+        <div class="card min-w-0"><div class="card-h"><span class="card-t">Gateway counters</span></div>
+          <div class="grid grid-cols-2 gap-px bg-zinc-200 dark:bg-zinc-800 sm:grid-cols-3">${counts.map(([k, l]) => `<div class="bg-white p-4 dark:bg-zinc-900"><div class="text-xs muted">${l}</div><div class="mt-1 text-xl font-semibold tabular-nums ${k === 'errors' && cnt[k] ? 'text-red-500' : ''}">${int(cnt[k])}</div></div>`).join('')}<div class="bg-white dark:bg-zinc-900"></div></div>
+        </div>
+      </div>`;
+  }
+  refresh(); autoRefresh(refresh);
+};
+
+// Settings
+Views.settings = function (el, gen) {
+  const rk = store.get('rk') || '';
+  el.innerHTML = head('Settings', '') + `
+  <div class="space-y-4">
+    <div class="card p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0"><div class="text-sm font-semibold">Learn from good conversations</div>
+          <p class="mt-1 max-w-2xl text-sm muted">When on, conversations that went well are added to your memory of past cases each night, so Nano gets more of your requests right. Stored in your project only and never used to train any model.</p></div>
+        <button id="optIn" role="switch" aria-checked="false" aria-label="Learn from good conversations" class="relative mt-1 h-6 w-11 shrink-0 rounded-full bg-zinc-300 transition dark:bg-zinc-700" disabled>
+          <span class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition"></span></button>
+      </div>
+    </div>
+    <div class="card p-5"><div class="text-sm font-semibold">Integration</div>
+      <div class="mt-3 grid gap-3">
+        <div><div class="label">Base URL</div><div class="flex items-center gap-2"><code class="code min-w-0 flex-1 truncate !py-2">${esc(BASE_URL)}</code>${copyBtn(BASE_URL)}</div></div>
+        <div><div class="label">Router key</div><div class="flex items-center gap-2"><code class="code min-w-0 flex-1 truncate !py-2">${esc(rk.slice(0, 7))}${'•'.repeat(18)}${esc(rk.slice(-4))}</code>${copyBtn(rk)}</div></div>
+        <div><div class="label">Project</div><div id="projInfo" class="text-sm muted">—</div></div>
+        <div><div class="label">Knowledge</div><a href="/teach" class="text-sm underline underline-offset-2">Teach your router: upload policy, FAQ, conversations →</a></div>
+      </div>
+      <div class="mt-4">${snippets(rk)}</div>
+    </div>
+    <div class="card flex flex-wrap items-center justify-between gap-3 p-5">
+      <div><div class="text-sm font-semibold">Log out</div><p class="text-sm muted">Ends your session on this browser. You'll need your router key to log back in.</p></div>
+      <button id="signOut" class="btn border-red-300 text-red-600 hover:bg-red-50 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10">Log out</button>
+    </div>
+  </div>`;
+  $('#signOut').addEventListener('click', () => { if (confirm('Log out and forget the router key in this browser?')) signOut(); });
+  const sw = $('#optIn');
+  const paint = on => { sw.setAttribute('aria-checked', String(on)); sw.classList.toggle('!bg-accent', on); sw.firstElementChild.style.transform = on ? 'translateX(20px)' : ''; };
+  (async () => {
+    try { S.me = await api('/api/me'); } catch (e) { toast(e.message); return; }
+    if (gen !== S.gen) return;
+    $('#projInfo').innerHTML = `${esc(S.me.name || '')} <span class="font-mono text-xs">${esc(S.me.project_id || '')}</span>`;
+    paint(!!S.me.log_opt_in); sw.disabled = false;
+  })();
+  sw.addEventListener('click', async () => {
+    const on = sw.getAttribute('aria-checked') !== 'true';
+    sw.disabled = true; paint(on);
+    try { await api('/api/settings', { method: 'PUT', body: { log_opt_in: on } }); if (S.me) S.me.log_opt_in = on; toast(on ? 'Learning from good conversations on' : 'Learning from good conversations off', 'ok'); }
+    catch (e) { paint(!on); toast(e.message); }
+    sw.disabled = false;
+  });
+};
+
+// ---------- demo mocks (?demo=1) ----------
+const Mock = (() => {
+  const H = 3600, rand = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const PRICE = { nano: 0.000011, super: 0.00009, ultra: 0.00062 };
+  const customers = [['acme-corp', 4210, 1.5], ['globex', 2890, null], ['initech', 1544, 0.6], ['customer-42', 812, 0.25], ['umbrella', 401, null], ['hooli', 77, 2]]
+    .map(([user, requests, budget_usd]) => ({ user, requests, budget_usd }));
+  const sp1 = 'Today is {date}. You are a support agent for Contoso Shoes. Customer: {{customer_name}}.\n\nPolicy:\n- Refunds within 30 days of delivery.\n- Orders over $200 that need a refund go to a human.\n- Never promise a delivery date.\nAnswer in under 120 words, friendly and concise.';
+  const lintFor = s => [['template_var', '{date}', 'Template variable at the start of the prompt changes every request and breaks the prompt cache.'], ['template_var', '{{customer_name}}', 'Per-customer value in the cacheable prefix. Move it to the user message.'], ['date_word', 'Today', '"Today" suggests a changing date near the top of the prompt.']]
+    .map(([kind, match, message]) => ({ kind, match, pos: s.indexOf(match), message })).filter(w => w.pos >= 0);
+  const routes = [
+    { name: 'support-email', description: 'Answer customer support emails for an online shoe store.', system_prompt: sp1, policy: 'cascade', tier: 'nano', threshold: 0.87, first_n: 24, escalate_to: 'super',
+      calibration: { n: 40, coverage: 0.78, accuracies: { nano: 0.84, super: 0.9, ultra: 0.92 } }, lint: lintFor(sp1), cache: { requests: 812, prompt_tokens: 1204000, cached_tokens: 144480, hit_rate: 0.12 } },
+    { name: 'sql-gen', description: 'Turn analyst questions into Postgres SQL against the warehouse schema.', system_prompt: 'You write PostgreSQL for the schema below. Return only SQL.\n\nSchema:\n  orders(id, customer_id, total, created_at)\n  customers(id, name, region)', policy: 'direct', tier: 'super', threshold: null, first_n: 24, escalate_to: null,
+      calibration: { n: 25, coverage: 0.12, accuracies: { nano: 0.44, super: 0.88, ultra: 0.92 } }, lint: [], cache: { requests: 1930, prompt_tokens: 2100000, cached_tokens: 1344000, hit_rate: 0.64 } },
+    { name: 'intent-classify', description: 'Classify inbound messages into one of 8 intents.', system_prompt: 'Classify the message into exactly one of: billing, shipping, returns, sizing, account, complaint, praise, other. Reply with the label only.', policy: 'direct', tier: 'nano', threshold: null, first_n: 8, escalate_to: null,
+      calibration: { n: 50, coverage: 0.97, accuracies: { nano: 0.96, super: 0.97, ultra: 0.97 } }, lint: [], cache: null },
+  ];
+  const jobs = {}; let jobSeq = 0; let optIn = false;
+  function overview(hours) {
+    const now = Math.floor(Date.now() / 1000 / H) * H, ts = [];
+    for (let i = hours - 1; i >= 0; i--) {
+      const t = now - i * H, r = rand(t), hr = new Date(t * 1000).getHours();
+      const base = Math.round((40 + 90 * Math.max(0, Math.sin((hr - 6) / 24 * Math.PI * 2))) * (0.75 + r() * 0.5));
+      const nano = Math.round(base * (0.68 + r() * 0.1)), ultra = Math.round(base * (0.03 + r() * 0.03)), sup = Math.max(0, base - nano - ultra);
+      ts.push({ t, requests: base, nano, super: sup, ultra, cost_usd: nano * PRICE.nano + sup * PRICE.super + ultra * PRICE.ultra });
+    }
+    const sum = k => ts.reduce((a, p) => a + p[k], 0);
+    const requests = sum('requests'), cost = sum('cost_usd'), ultraCost = requests * PRICE.ultra;
+    return { requests, cost_usd: cost, ultra_cost_usd: ultraCost, savings_pct: (1 - cost / ultraCost) * 100, tier_mix: { nano: sum('nano'), super: sum('super'), ultra: sum('ultra') },
+      escalation_rate: (sum('super') + sum('ultra')) / requests, fallbacks: Math.round(requests * 0.002), errors: Math.round(requests * 0.0004), p50_latency_ms: 612, avg_confidence: 0.86, timeseries: ts };
+  }
+  function requests(limit) {
+    const out = []; let t = Date.now() / 1000 - Math.random() * 5;
+    for (let i = 0; i < limit; i++) {
+      t -= 2 + Math.random() * 40;
+      const route = ['support-email', 'support-email', 'sql-gen', 'intent-classify', 'auto'][Math.floor(Math.random() * 5)];
+      const c = route === 'sql-gen' ? null : Math.min(0.999, 0.55 + Math.random() * 0.45);
+      const up = c != null && route === 'support-email' && c < 0.87;
+      const tier = route === 'sql-gen' ? 'super' : up ? (Math.random() < 0.85 ? 'super' : 'ultra') : 'nano';
+      const fb = Math.random() < 0.04;
+      const model = { nano: 'nvidia/Nemotron-3-Nano-30B-A3B', super: 'nvidia/Nemotron-3-Super-120B-A12B', ultra: 'nvidia/Nemotron-3-Ultra-550B' }[tier] + (fb ? '-fast' : '');
+      out.push({ ts: t, route, user: customers[Math.floor(Math.random() * customers.length)].user, tier, model, confidence: c, escalated: up, fallback: fb,
+        status: Math.random() < 0.01 ? 502 : 200, latency_ms: { nano: 280, super: 900, ultra: 3200 }[tier] * (0.6 + Math.random()), cost_usd: PRICE[tier] * (0.4 + Math.random() * 1.4), stream: Math.random() < 0.4 });
+    }
+    return out;
+  }
+  function handle(method, path, body) {
+    const u = new URL(path, location.origin), p = u.pathname;
+    const fail = (status, detail) => { const e = new Error(detail); e.status = status; throw e; };
+    if (p === '/api/me') return { project_id: 'prj_demo01', name: 'support-bot (demo)', log_opt_in: optIn };
+    if (p === '/api/overview') return overview(Number(u.searchParams.get('hours')) || 24);
+    if (p === '/api/insights') {
+      const k = (Number(u.searchParams.get('hours')) || 24) / 24, n = v => Math.max(1, Math.round(v * k));
+      const m = o => Object.fromEntries(Object.entries(o).map(([a, v]) => [a, n(v)]));
+      const tools = { 'validate-purchase': [96, 93], 'get-order': [88, 88], 'update-order': [41, 37], 'make-password': [12, 12], 'offer-refund': [9, 8] };
+      return { replies: n(260), pipeline_replies: n(214),
+        subflows: m({ return_size: 48, status_delivery_time: 31, refund_status: 26, return_color: 19, recover_password: 17, promo_code_invalid: 14, manage_change_address: 11, bad_price_competitor: 9, return_stain: 6 }),
+        plan_status: m({ ok: 151, need_info: 41, escalate: 15, deny: 7 }), missing_asked: m({ order_id: 22, email: 11, zip_code: 6, size: 4, username: 2 }),
+        intent_by: m({ code: 18, nano: 154, super: 34, ultra: 8 }), intent_conf_avg: 0.88, turn_types: m({ new_request: 9, answers_previous: 46, both: 3 }),
+        writer: m({ nano: 168, nano_x3: 37, ultra: 9 }), field_sources: m({ code: 233, store: 141, nano: 112, super: 19, ultra: 6 }),
+        tools: Object.fromEntries(Object.entries(tools).map(([a, [c, o]]) => [a, { calls: n(c), ok: Math.min(n(c), n(o)) }])), tool_success: 238 / 246,
+        calls_by_tier: m({ nano: 512, super: 61, ultra: 17, vision: 23 }), vision: m({ damaged_in_transit: 8, wrong_item: 6, defective_product: 5, no_issue: 4, off: 3 }),
+        lookups: { n: n(14), found: n(11) }, safety_pass: 0.986, open_tasks: n(5) };
+    }
+    if (p === '/api/customers' && method === 'GET') {
+      return customers.map(c => { const cost = c.requests * 0.00009 * (c.user === 'acme-corp' ? 4 : 1); return { user: c.user, requests: c.requests, cost_usd: cost, budget_usd: c.budget_usd, pct: c.budget_usd ? cost / c.budget_usd * 100 : null }; });
+    }
+    if (p.startsWith('/api/customers/') && method === 'PUT') {
+      const c = customers.find(x => x.user === decodeURIComponent(p.split('/').pop())); if (!c) fail(404, 'unknown customer');
+      c.budget_usd = body.budget_usd; return { ok: true };
+    }
+    if (p === '/api/routes' && method === 'GET') return routes;
+    if (p === '/api/routes' && method === 'POST') {
+      if (routes.some(r => r.name === body.name)) fail(409, `route "${body.name}" already exists`);
+      const id = 'job-' + (++jobSeq); jobs[id] = { polls: 0, body }; return { job_id: id };
+    }
+    if (p.startsWith('/api/jobs/')) {
+      const id = decodeURIComponent(p.split('/').pop()), j = jobs[id]; if (!j) fail(404, 'job not found');
+      if (++j.polls < 4) return { id, kind: 'calibrate', status: 'running', result: null };
+      const result = { policy: 'cascade', tier: 'nano', threshold: 0.82, coverage: 0.71, n: j.body.examples.length, escalate_to: 'super' };
+      if (!routes.some(r => r.name === j.body.name)) {
+        const sp = j.body.system_prompt || ('You are an assistant for this task: ' + j.body.description);
+        routes.push({ name: j.body.name, description: j.body.description, system_prompt: sp, policy: 'cascade', tier: 'nano', threshold: 0.82, first_n: 24, escalate_to: 'super',
+          calibration: { n: j.body.examples.length, coverage: 0.71, accuracies: { nano: 0.81, super: 0.86, ultra: 0.88 } }, lint: lintFor(sp), cache: null });
+      }
+      return { id, kind: 'calibrate', status: 'done', result };
+    }
+    if (p === '/api/requests') return requests(Number(u.searchParams.get('limit')) || 50);
+    if (p === '/api/limits') {
+      const r = Math.random();
+      return { limits: { requests_per_minute: 600, tokens_per_minute: 400000 }, remaining: { requests_per_minute: Math.round(180 + r * 60), tokens_per_minute: Math.round(150000 + r * 60000) },
+        dynamic: { usage_requests_pct: 62 + r * 10, usage_tokens_pct: 44 + r * 10, scale_requests: 1.2, period_remaining_s: 300 + Math.round(r * 500) },
+        counts: { requests: 9934, retries: 21, fallbacks: 17, rate_limited: 6, errors: 3 }, last_429_ts: Date.now() / 1000 - 1900 };
+    }
+    if (p === '/api/settings' && method === 'PUT') { optIn = !!body.log_opt_in; return { ok: true }; }
+    fail(404, 'Not found: ' + p);
+  }
+  return { handle };
+})();
+
+render();
+</script>
+</body>
+</html>

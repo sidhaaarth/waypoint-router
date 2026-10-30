@@ -1,0 +1,17 @@
+# Waypoint in your own network. Your data (projects, keys, request history, uploads, memory) lives in the volume.
+# Each user pastes their own Token Factory key at sign-up; .env is optional (Tavily lookups, LangSmith tracing).
+services:
+  waypoint:
+    build: .
+    image: waypoint:local
+    ports:
+      - "8888:8888"
+    volumes:
+      - waypoint-data:/data
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
+
+volumes:
+  waypoint-data:

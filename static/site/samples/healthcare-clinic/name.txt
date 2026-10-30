@@ -1,0 +1,3 @@
+clinic-front-desk
+
+Why this name: it makes the boundary obvious to anyone reading your code: this connection does front-desk admin (appointments, opening hours, forms, billing, insurance paperwork, prescription refill requests routed to staff), never medical advice. In code: model="clinic-front-desk". Keep any clinical workflow completely separate and reviewed by clinicians; it should not share this connection.
