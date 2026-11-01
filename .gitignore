@@ -42,3 +42,7 @@ research/
 
 # --- demo script (local only) ------------------------------------------------
 speech-writeup.md
+
+# --- screenshots for the submission gallery ------------------------------------
+screenshots/
+.agents/

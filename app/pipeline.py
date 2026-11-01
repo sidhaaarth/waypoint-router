@@ -79,10 +79,13 @@ IDENTITY = ["full_name", "username", "email", "order_id", "account_id"]
 INTERPRETED = {"reason", "product", "size", "color", "item", "issue"}
 NO_SPACE = {"username", "account_id", "email", "order_id"}  # a value with a space here is a mis-filed name
 TOOL_FACTS = {"company_error"}  # answered by the store (oracle), never asked of the customer
-# The customer's own choice (D53): never auto-filled, asked for when missing. Nano's enum pick must be grounded in the
-# customer's words. ponytail: grounding = one 4+ letter word of the value appears in the text ("in store" passes on any
-# "store"); a forced-choice re-ask is the upgrade if wrong picks show up.
-CHOICES = {"return_method", "refund_method"}
+# The customer's own choice (D53): never auto-filled, asked for when missing. When the request type needs it, Nano picks
+# one option or "none" (forced choice, logprob confidence); below the threshold it counts as missing and is asked for.
+CHOICES = {"return_method": {"by mail": "the customer posts the item back",
+                             "in store": "the customer brings it to one of our shops",
+                             "drop off center": "the customer leaves it at a drop-off or collection point"},
+           "refund_method": {"gift card": "store gift card", "add value": "credit added to their store account",
+                             "paper check": "a cheque in the post", "credit card": "back to the card they paid with"}}
 HIGH_STAKES_AMOUNT =200.0  # ponytail: fixed $ cut-off for the Ultra writer; make it a route setting if stores differ
 
 
@@ -417,8 +420,9 @@ async def _fields(key, text, subflow, R, meta, priority, threshold, pre=None):
         if v in (None, ""):
             continue
         v = v.strip() if isinstance(v, str) else v
-        if _copy(f, types) and not in_text(v, text) or (f in NO_SPACE and isinstance(v, str) and " " in v) or \
-                (f in CHOICES and not _grounded(v, text)):
+        if f in CHOICES:  # decided by the forced choice below
+            continue
+        if _copy(f, types) and not in_text(v, text) or (f in NO_SPACE and isinstance(v, str) and " " in v):
             dropped[f] = v  # invented / mis-copied
             continue
         c = confs.get(f, 0.0)
@@ -430,6 +434,13 @@ async def _fields(key, text, subflow, R, meta, priority, threshold, pre=None):
             fields[f] = {"value": v, "confidence": c, "by": "nano"}
     for f, v in code.items():  # regex-only shapes the subflow didn't name (e.g. amount) are still facts
         fields.setdefault(f, {"value": v, "confidence": 1.0, "by": "code"})
+    want = [f for f in CHOICES if f in relevant]
+    for f, (pick, c) in zip(want, await asyncio.gather(*(_pick_choice(key, meta, priority, f, text) for f in want))):
+        by = "nano"
+        if c < threshold:  # Nano unsure -> the same forced choice on Super; its "none" means ask the customer
+            pick, by = (await _pick_choice(key, meta, priority, f, text, "super"))[0], "super"
+        if pick:
+            fields[f] = {"value": pick, "confidence": c, "by": by}
     if unsure:
         ux = await _chat(key, "ultra", [{"role": "system", "content": EXTRACT_SYS.format(store=STORE, fields=", ".join(unsure))},
                                         {"role": "user", "content": text}],
@@ -451,9 +462,19 @@ async def _fields(key, text, subflow, R, meta, priority, threshold, pre=None):
     return fields, {"mood": mood, "issue_count": issues, "dropped": dropped, "names": relevant}
 
 
-def _grounded(v, text):
-    t = str(text).casefold()
-    return any(w in t for w in re.findall(r"[a-z]{4,}", str(v).casefold()))
+async def _pick_choice(key, meta, priority, field, text, tier="nano"):
+    """The customer's choice for `field` (CHOICES), or None when they have not said. Returns (option | None, confidence)."""
+    opts, note = CHOICES[field], meta.get("store_note")
+    ask = (f"Which {field.replace('_', ' ')} should we use? The store team's decision overrides the customer's wish. "
+           "Answer 'none' if neither settles it." if note else
+           f"Which {field.replace('_', ' ')} has the customer chosen? Answer 'none' if they have not clearly said.")
+    msgs = [{"role": "system", "content": ask + "\n" + "\n".join(f"{k}: {v}" for k, v in opts.items())},
+            {"role": "user", "content": f"Customer wrote:\n{text}\n\nStore team decision (overrides the customer):\n{note}"
+                                        if note else text}]
+    out, lp, a = await _chat(key, tier, msgs, meta, priority, score=True, max_tokens=16,
+                             structured_outputs={"choice": [*opts, "none"]}, **({} if tier == "nano" else config.NO_THINK))
+    a["confidence"] = c = _label_conf(lp, True)
+    return (out.strip() if out.strip() in opts else None), c
 
 
 def _store():
@@ -740,16 +761,30 @@ async def _pick_faq(key, meta, priority, entries, text):
     return out.strip() if out.strip() in ids else None
 
 
-async def _act(store_url, subflow, plan, facts, fields, R, key=None, meta=None, priority="interactive", text=""):
+async def _subject(key, meta, priority, text):
+    """One-line summary of the customer's message: the subject of the store team's to-do."""
+    msgs = [{"role": "system", "content": "Write a short subject line (at most 10 words) that sums up what this customer "
+                                          "wants. Reply with the subject line only."}, {"role": "user", "content": text}]
+    try:
+        out = (await _chat(key, "nano", msgs, meta, priority, max_tokens=30))[0]
+    except ModelError:
+        out = ""
+    return out.strip().strip('"').splitlines()[0][:120] if out.strip() else text[:80]
+
+
+async def _act(store_url, subflow, plan, facts, fields, R, key=None, meta=None, priority="interactive", text="", route_name=None):
     """Run the plan's store actions in order (only when status ok); stop on ok:false. Rules escalate while company_error
-    is unknown: then ask the oracle first (yes = the customer is right / company made the mistake) and re-plan."""
-    client, calls = _store(), []
+    is unknown: then ask the oracle first (yes = the customer is right / company made the mistake) and re-plan.
+    Writes (WRITES) go with the customer's words and a subject: the store queues them for a person to approve."""
+    client, calls, ctx = _store(), [], {}
     if not (client and store_url):
         return plan, calls
     schemas = await _tool_params(client, store_url)
 
     async def do(action):
         args = tool_args(schemas.get(action), facts, subflow)
+        if action == "update-order" and facts.get("return_method"):  # a return: the address is where it comes from
+            args.pop("full_address", None)                            # (enter-details), not a new shipping address
         if action == "offer-refund" and "amount" in args and facts.get("order_total") is not None:
             args["amount"] = min(float(args["amount"]), float(facts["order_total"]))  # never above the order (fix 6)
         if action == "select-faq" and key:
@@ -757,8 +792,10 @@ async def _act(store_url, subflow, plan, facts, fields, R, key=None, meta=None, 
             if entries and (fid := await _pick_faq(key, meta, priority, entries, text)):
                 slot = "single_item_query" if R["subflows"][subflow]["flow"] == "single_item_query" else "storewide_query"
                 args[slot] = fid
+        if action in QUEUED and key and not ctx:
+            ctx.update(subject=await _subject(key, meta, priority, text), customer_text=text, route=route_name)
         try:
-            r = await client.call(store_url, action, args)
+            r = await client.call(store_url, action, args, ctx if action in QUEUED else None)
         except Exception as e:
             r = {"ok": False, "message": f"store error: {e}", "data": None}
         if not isinstance(r, dict):
@@ -836,17 +873,24 @@ def allowed_asks(plan, tool_calls, extra=()):
 def _brief(plan, facts, tool_calls, intent, notes=(), asks=None):
     status = plan["status"]
     done = status == "ok" and tool_calls and all(c["ok"] for c in tool_calls)
+    waiting = [str(c["result"]["data"].get("request")) for c in tool_calls or [] if _pending(c)]
     lines = [f"Store: {STORE}", f"Customer's request type: {intent['subflow']} ({intent['flow']})",
-             f"Decision: {'DONE' if done else status}"]
+             f"Decision: {('SENT FOR APPROVAL' if waiting else 'DONE') if done else status}"]
     if plan.get("matched") and plan["matched"].get("say"):
         lines.append(f"What the rule says to tell the customer: {plan['matched']['say']}")
     policy = plan.get("policy_text") or "(none)"
     if done:  # live p3: "Ask the customer how ... Options include ..." in the policy made the writer re-ask
         policy = "\n".join(ln for ln in policy.splitlines() if not ASK_RX.search(ln)) or "(none)"
         chose = [f"{f.replace('_', ' ')}: {facts[f]}" for f in CHOICES if facts.get(f)]
-        lines.append("DONE: every store action below succeeded. Tell the customer plainly what was done"
-                     + (f" ({'; '.join(chose)})" if chose else "") + ". Do NOT ask them to choose anything or list "
-                     "options, and ask no questions about this request; it is complete.")
+        if waiting:
+            lines.append("SENT FOR APPROVAL: every check passed and these changes now wait for a store team member to "
+                         f"approve: {'; '.join(waiting)}" + (f" ({'; '.join(chose)})" if chose else "") + ". Tell the "
+                         "customer their request is with our team, who will confirm by email once it is approved. Do NOT "
+                         "say it is already done, ask them to choose anything, or ask any questions about this request.")
+        else:
+            lines.append("DONE: every store action below succeeded. Tell the customer plainly what was done"
+                         + (f" ({'; '.join(chose)})" if chose else "") + ". Do NOT ask them to choose anything or list "
+                         "options, and ask no questions about this request; it is complete.")
     lines.append("Store policy for this request:\n" + policy)
     lines.append("Decided facts (the only facts you may state):\n" + json.dumps(facts, ensure_ascii=False))
     if tool_calls:
@@ -970,6 +1014,7 @@ def safety_issues(reply, allowed):
 
 # Completion claims (fix 5): "<verb>" stated as done must be backed by a successful store action of these kinds.
 WRITES = {"update-order", "update-account", "offer-refund", "promo-code", "make-purchase", "make-password", "send-link"}
+QUEUED = WRITES - {"send-link"}  # the store holds these for a person to approve (store/app.py WRITES)
 CLAIMS = {"refunded": {"offer-refund"}, "credited": {"offer-refund", "promo-code", "update-account"},
           "issued": {"offer-refund", "promo-code", "send-link", "make-password"}, "sent": {"send-link", "promo-code"},
           "cancelled": {"update-order", "update-account"}, "canceled": {"update-order", "update-account"},
@@ -982,8 +1027,14 @@ def _sentences(reply):
     return [s for s in re.split(r"(?<=[.?!])\s+|\n+", reply) if s.strip()]
 
 
+def _pending(c):
+    """A write the store queued for a person: checked, not done."""
+    d = (c.get("result") or {}).get("data")
+    return bool(c.get("ok") and isinstance(d, dict) and d.get("pending"))
+
+
 def claim_issues(reply, tool_calls):
-    ok = {c["action"] for c in tool_calls or [] if c.get("ok")}
+    ok = {c["action"] for c in tool_calls or [] if c.get("ok") and not _pending(c)}
     return [f"says '{m.group(0).strip()}' but no matching store action succeeded"
             for m in CLAIM_RX.finditer(reply) if not CLAIMS[m.group(1).lower()] & ok]
 
@@ -1196,6 +1247,8 @@ async def _task(key, text, R, meta, priority, threshold, route, messages=None, a
         for f, v in got.get("fields", {}).items():
             fields.setdefault(f, dict(v))
     notes, store_url = [], route.get("store_url")
+    if meta.get("store_note"):  # the store team declined an earlier proposal and said why (store Approvals page)
+        notes.append(f"Store team note on this case (follow it over the customer's own choice): {meta['store_note']}")
     rec = await _resolve(store_url, fields, extra.pop("names"), notes, intent["subflow"])
     problem = fields.pop(ORDER_PROBLEM, None)
     if share and not share.done():
@@ -1229,7 +1282,8 @@ async def _task(key, text, R, meta, priority, threshold, route, messages=None, a
                      + (f" (it looks like {m['shows']})" if m.get("shows") else "") + ". Explain this politely and ask "
                      "them to send a photo of the item they received. Do not start the request yet.")
     elif act:
-        plan, calls = await _act(store_url, intent["subflow"], plan, facts, fields, R, key, meta, priority, text)
+        plan, calls = await _act(store_url, intent["subflow"], plan, facts, fields, R, key, meta, priority, text,
+                                 route.get("name"))
     if plan["status"] == "ok" and fields.get("address", {}).get("source") == "store":
         notes.append(f'Confirm the address in these words: "We\'ll use the address on file: {fields["address"]["value"]}."')
     # LOOKS UP (Tavily, fix 10): outside facts only from the store's trusted domains, only for request types the store
@@ -1344,12 +1398,16 @@ def _no_reply_meta(meta, label, conf, by, status):
     meta["writer"] = "none"
 
 
-async def run(key, messages, route, channel="email", priority="interactive"):
+async def run(key, messages, route, channel="email", priority="interactive", store_note=None):
+    """store_note: the store team's reason for declining an earlier proposal; steers the customer's choices
+    (CHOICES) and the reply. ponytail: it does not change the rules' decision; that needs a rules edit."""
     route = route or {}
     threshold = config.DEFAULT_THRESHOLD if route.get("threshold") is None else route["threshold"]
     store_url = route.get("store_url")
     meta = {"channel": channel, "intent": None, "fields": {}, "plan": None, "tool_calls": [], "writer": None,
             "safety": {"ok": True, "issues": []}, "attempts": [], "status": 200}
+    if store_note:
+        meta["store_note"] = str(store_note)[:2000]
     turns = _turns(messages)
     text = "\n".join(turns)
     R = rules.load()

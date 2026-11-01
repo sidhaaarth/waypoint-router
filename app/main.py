@@ -174,7 +174,7 @@ async def pipeline_response(project, key, body, route, user, started, stream, pr
     """Route policy "pipeline". Channel: x-router-channel header, else chat if the thread has >1 customer turn."""
     msgs = body.get("messages", [])
     channel = channel or ("chat" if sum(m.get("role") == "user" for m in msgs) > 1 else "email")
-    reply, pm = await pipeline.run(key, msgs, route, channel=channel, priority=priority)
+    reply, pm = await pipeline.run(key, msgs, route, channel=channel, priority=priority, store_note=body.get("store_note"))
     tiers = [a["tier"] for a in pm.get("attempts", [])]
     meta = {"tier": "ultra" if "ultra" in tiers else "nano", "model": f"pipeline:{pm.get('writer')}",
             "confidence": (pm.get("intent") or {}).get("confidence"), "escalated": "ultra" in tiers,
